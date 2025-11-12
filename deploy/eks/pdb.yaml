@@ -1,0 +1,11 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: koorde-node-pdb
+  namespace: koorde-cache
+spec:
+  minAvailable: 3
+  selector:
+    matchLabels:
+      app: koorde-node
+

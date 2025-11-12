@@ -1,0 +1,116 @@
+syntax = "proto3";
+
+package dht.v1;
+
+option go_package = "github.com/flaviosimonelli/KoordeDHT/internal/api/dht/v1;dhtv1";
+
+import "google/protobuf/empty.proto";
+
+// ---------------------------------------------------------------
+// Base types
+// ---------------------------------------------------------------
+
+message Node {
+  bytes id = 1;       // Node identifier (big-endian hash)
+  string address = 2; // Network address (IP:Port)
+}
+
+// ---------------------------------------------------------------
+// Lookup & routing (Koorde-specific)
+// ---------------------------------------------------------------
+
+message FindSuccessorRequest {
+  bytes target_id = 1;  // ID to resolve
+  oneof mode {
+    Initial initial = 2; // first step
+    Step step = 3; // subsequent steps
+  }
+}
+
+message Initial {}
+
+message Step {
+  bytes current_i = 1; // imaginary node
+  bytes k_shift   = 2; // key shifted state
+}
+
+message FindSuccessorResponse {
+  Node node = 1; // successor responsible for target_id
+}
+
+// ---------------------------------------------------------------
+// Maintenance
+// ---------------------------------------------------------------
+
+// Successor list
+message SuccessorList {
+  repeated Node successors = 1; // list of successors
+}
+
+// ---------------------------------------------------------------
+// Storage operations (node-to-node)
+// ---------------------------------------------------------------
+
+// Resource stored in the DHT.
+message Resource {
+  bytes key = 1;
+  string raw_key = 2; // for debugging
+  string value = 3;
+}
+
+// Store a resource (Put).
+message StoreRequest {
+  Resource resource = 1;
+}
+
+// Retrieve a resource (Get).
+message RetrieveRequest {
+  bytes key = 1;
+}
+
+message RetrieveResponse {
+  Resource resource = 1;
+}
+
+// Remove a resource (Delete).
+message RemoveRequest {
+  bytes key = 1;
+}
+
+
+// ---------------------------------------------------------------
+// Service definition
+// ---------------------------------------------------------------
+
+service DHT {
+    // Lookup in the Koorde overlay.
+    // Returns the successor responsible for target_id.
+    rpc FindSuccessor(FindSuccessorRequest) returns (FindSuccessorResponse);
+
+    // Returns this node's predecessor.
+    rpc GetPredecessor(google.protobuf.Empty) returns (Node); // status.Error(codes.NotFound, "key not found") se non ha predecessore
+    // Returns this node's successor list.
+    rpc GetSuccessorList(google.protobuf.Empty) returns (SuccessorList);
+
+    // Notify a node that "node" may be its predecessor.
+    // The callee updates state if the notification is valid.
+    rpc Notify(Node) returns (google.protobuf.Empty);
+
+    // Ping to check liveness of the node (debug).
+    rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
+
+    // Store a resource (Put). If the key already exists, overwrite it.
+    rpc Store(stream StoreRequest) returns (google.protobuf.Empty);
+
+    // Retrieve a resource (Get).
+    // Returns NotFound if the key does not exist.
+    rpc Retrieve(RetrieveRequest) returns (RetrieveResponse);
+
+    // Remove a resource (Delete).
+    // Returns NotFound if the key does not exist.
+    rpc Remove(RemoveRequest) returns (google.protobuf.Empty);
+
+    // Gracefully leave the DHT, notifying the successor that the predecessor leave.
+    // Returns InvalidArgument if the node is not the successor of this node.
+    rpc Leave(Node) returns (google.protobuf.Empty);
+}

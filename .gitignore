@@ -1,0 +1,36 @@
+# Test results and output files
+deploy/test/results/*.log
+deploy/test/results/*.csv
+deploy/tracing/results/*.json
+deploy/demonstration/results/*.txt
+
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# However, you may want to keep some shared IDE configs:
+# !.idea/runConfigurations/
+# !.idea/codeStyles/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+

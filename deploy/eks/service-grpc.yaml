@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: koorde-grpc
+  namespace: koorde-cache
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "external"
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internal"  # Internal only for gRPC
+  labels:
+    app: koorde-node
+spec:
+  type: LoadBalancer
+  selector:
+    app: koorde-node
+  ports:
+  - name: grpc
+    port: 4000
+    targetPort: 4000
+    protocol: TCP
+

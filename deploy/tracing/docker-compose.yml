@@ -1,0 +1,92 @@
+networks:
+  koordenet:
+    driver: bridge
+
+services:
+  jaeger:
+    image: cr.jaegertracing.io/jaegertracing/jaeger:latest
+    container_name: jaeger
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+    networks:
+      - koordenet
+    restart: unless-stopped
+
+  bootstrap:
+    image: flaviosimonelli/koorde-node:latest
+    container_name: koorde-bootstrap
+    env_file:
+      - ./common_node.env
+    environment:
+      - BOOTSTRAP_PEERS=
+      - CACHE_ENABLED=true
+    ports:
+      - "4000:4000"   # gRPC DHT
+      - "8080:8080"   # HTTP Cache API
+    networks:
+      - koordenet
+    depends_on:
+      - jaeger
+    restart: always
+
+  node:
+    image: flaviosimonelli/koorde-node:latest
+    env_file:
+      - ./common_node.env
+    environment:
+      - BOOTSTRAP_PEERS=bootstrap:4000
+      - CACHE_ENABLED=true
+    ports:
+      - "4000"  # gRPC (dynamic)
+      - "8080"  # HTTP Cache API (dynamic)
+    networks:
+      - koordenet
+    depends_on:
+      - bootstrap
+    restart: unless-stopped
+
+  client:
+    image: flaviosimonelli/koorde-client:latest
+    container_name: koorde-client
+    command: ["--addr=bootstrap:4000", "--timeout=5s"]
+    stdin_open: true
+    tty: true
+    networks:
+      - koordenet
+    depends_on:
+      - bootstrap
+    restart: no
+
+  # Cache test client
+  cache-tester:
+    image: curlimages/curl:latest
+    container_name: cache-tester
+    networks:
+      - koordenet
+    depends_on:
+      - bootstrap
+    entrypoint: /bin/sh
+    command: >
+      -c "
+        echo 'Waiting for cluster to stabilize...' &&
+        sleep 60 &&
+        echo '' &&
+        echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━' &&
+        echo 'Testing cache functionality...' &&
+        echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━' &&
+        echo '' &&
+        echo '[Test 1] First request (should be MISS):' &&
+        curl -s -w '\nHTTP Code: %{http_code}\nTime: %{time_total}s\n' \
+          'http://bootstrap:8080/cache?url=https://httpbin.org/json' | head -20 &&
+        echo '' &&
+        echo '[Test 2] Second request (should be HIT):' &&
+        curl -s -w '\nHTTP Code: %{http_code}\nTime: %{time_total}s\n' \
+          'http://bootstrap:8080/cache?url=https://httpbin.org/json' | head -20 &&
+        echo '' &&
+        echo '[Test 3] Cache metrics:' &&
+        curl -s 'http://bootstrap:8080/metrics' | jq &&
+        echo '' &&
+        echo 'Tests complete. Container will keep running...' &&
+        tail -f /dev/null
+      "

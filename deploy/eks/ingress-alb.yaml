@@ -1,0 +1,81 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: koorde-cache-ingress
+  namespace: koorde-cache
+  annotations:
+    # ALB Configuration
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    
+    # Certificate (replace with your ACM certificate ARN)
+    # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:123456789012:certificate/abc123
+    
+    # Health checks
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
+    
+    # Target groups
+    alb.ingress.kubernetes.io/target-group-attributes: |
+      deregistration_delay.timeout_seconds=30,
+      stickiness.enabled=false
+    
+    # Tags
+    alb.ingress.kubernetes.io/tags: Environment=production,Project=koorde-cache
+spec:
+  ingressClassName: alb
+  rules:
+  # If using custom domain, uncomment and set host
+  # - host: cache.example.com
+  - http:
+      paths:
+      - path: /cache
+        pathType: Prefix
+        backend:
+          service:
+            name: koorde-cache-http-internal
+            port:
+              number: 8080
+      - path: /metrics
+        pathType: Exact
+        backend:
+          service:
+            name: koorde-cache-http-internal
+            port:
+              number: 8080
+      - path: /health
+        pathType: Exact
+        backend:
+          service:
+            name: koorde-cache-http-internal
+            port:
+              number: 8080
+      - path: /debug
+        pathType: Exact
+        backend:
+          service:
+            name: koorde-cache-http-internal
+            port:
+              number: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: koorde-cache-http-internal
+  namespace: koorde-cache
+spec:
+  type: ClusterIP
+  selector:
+    app: koorde-node
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+

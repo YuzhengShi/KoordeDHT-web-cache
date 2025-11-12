@@ -1,0 +1,65 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: koorde-node-netpol
+  namespace: koorde-cache
+spec:
+  podSelector:
+    matchLabels:
+      app: koorde-node
+  policyTypes:
+  - Ingress
+  - Egress
+  
+  ingress:
+  # Allow gRPC from other Koorde nodes (DHT communication)
+  - from:
+    - podSelector:
+        matchLabels:
+          app: koorde-node
+    ports:
+    - protocol: TCP
+      port: 4000
+  
+  # Allow HTTP from anywhere (cache requests)
+  - from: []
+    ports:
+    - protocol: TCP
+      port: 8080
+  
+  egress:
+  # Allow egress to other Koorde nodes (DHT communication)
+  - to:
+    - podSelector:
+        matchLabels:
+          app: koorde-node
+    ports:
+    - protocol: TCP
+      port: 4000
+  
+  # Allow DNS
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+  
+  # Allow HTTPS to fetch from origin (web cache)
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
+  
+  # Allow tracing to Jaeger (if enabled)
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: observability
+    ports:
+    - protocol: TCP
+      port: 4317
+

@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cache-workload-test
+  namespace: koorde-cache
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: cache-workload
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: workload
+        image: golang:1.25
+        command:
+        - /bin/sh
+        - -c
+        - |
+          # Clone and build workload generator
+          cd /tmp
+          git clone https://github.com/yourusername/KoordeDHT-web-cache.git
+          cd KoordeDHT-web-cache
+          go build -o /workload ./cmd/cache-workload
+          
+          # Get load balancer URL
+          LB_URL="http://koorde-cache-http-internal.koorde-cache.svc.cluster.local:8080"
+          
+          # Run workload
+          /workload \
+            --target ${LB_URL} \
+            --urls 1000 \
+            --requests 10000 \
+            --rate 100 \
+            --zipf 0.9 \
+            --output /results/workload-results.csv
+          
+          # Display summary
+          tail -20 /results/workload-results.csv
+        volumeMounts:
+        - name: results
+          mountPath: /results
+      volumes:
+      - name: results
+        emptyDir: {}
+

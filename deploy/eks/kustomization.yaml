@@ -1,0 +1,35 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: koorde-cache
+
+resources:
+  - configmap.yaml
+  - statefulset.yaml
+  - service-headless.yaml
+  - service-cache.yaml
+  - service-grpc.yaml
+  - pdb.yaml
+  - hpa.yaml
+
+# Optional: Add common labels
+commonLabels:
+  project: koorde-cache
+  managed-by: kustomize
+
+# Optional: Add namespace prefix
+# namePrefix: prod-
+
+# Optional: Add image tags
+images:
+  - name: flaviosimonelli/koorde-node
+    newTag: latest
+
+# ConfigMap generator (alternative to configmap.yaml)
+# configMapGenerator:
+#   - name: koorde-config
+#     literals:
+#       - DHT_MODE=private
+#       - DHT_ID_BITS=66
+#       # ... etc
+
