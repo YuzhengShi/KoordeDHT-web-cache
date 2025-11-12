@@ -100,3 +100,8 @@ KoordeDHT/internal/node/logicnode.(*Node).fixDeBruijn
 KoordeDHT/internal/node/logicnode.(*Node).StartStabilizers.func2
 	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/worker.go:49
 2025-11-11T20:46:44.042-0800	[33mWARN[0m	node	logicnode/worker.go:459	fixDeBruijn: could not find successor	{"self": {"addr":"localhost:4004","id":"0x003ce6a18a52608073"}, "target": "0x01777f85573a944e12", "err": "context deadline exceeded"}
+2025-11-11T20:57:59.906-0800	[34mINFO[0m	node.http-server	server/http.go:151	DHT lookup complete	{"self": {"addr":"localhost:4004","id":"0x003ce6a18a52608073"}, "url": "https://www.google.com", "hash": "0x037efc9839c3ee036f", "responsible": {"addr":"localhost:4004","id":"0x003ce6a18a52608073"}, "lookup_latency_ms": 0}
+2025-11-11T20:57:59.910-0800	[34mINFO[0m	node.http-server	server/http.go:254	I am responsible, fetching from origin	{"self": {"addr":"localhost:4004","id":"0x003ce6a18a52608073"}, "url": "https://www.google.com"}
+2025-11-11T20:58:00.040-0800	[34mINFO[0m	node.http-server	server/http.go:478	Origin fetch successful	{"self": {"addr":"localhost:4004","id":"0x003ce6a18a52608073"}, "url": "https://www.google.com", "size_bytes": 17996, "content_type": "text/html; charset=ISO-8859-1"}
+2025-11-11T20:58:00.040-0800	[34mINFO[0m	node.http-server	server/http.go:274	Content cached successfully	{"self": {"addr":"localhost:4004","id":"0x003ce6a18a52608073"}, "url": "https://www.google.com", "size_bytes": 17996}
+2025-11-11T20:58:00.040-0800	[34mINFO[0m	node.http-server	server/http.go:286	Request completed	{"self": {"addr":"localhost:4004","id":"0x003ce6a18a52608073"}, "url": "https://www.google.com", "total_latency_ms": 134, "content_size": 17996}
