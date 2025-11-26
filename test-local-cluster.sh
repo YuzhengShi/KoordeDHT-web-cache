@@ -18,6 +18,8 @@ if [ ! -f bin/koorde-node ]; then
     go build -o bin/koorde-node ./cmd/node
     go build -o bin/koorde-client ./cmd/client
     go build -o bin/cache-workload ./cmd/cache-workload
+    go build -o bin/cache-client ./cmd/cache-client
+    go build -o bin/tester ./cmd/tester
 fi
 
 # Create directories
@@ -75,7 +77,7 @@ cache:
   httpPort: ${HTTP_PORT}
   capacityMB: 512
   defaultTTL: 3600
-  hotspotThreshold: 100.0
+  hotspotThreshold: 10.0
   hotspotDecayRate: 0.65
 
 telemetry:

@@ -18,7 +18,7 @@ dht:
     peers: ["localhost:4000"]
   
   deBruijn:
-    degree: 8
+    degree: 2
     fixInterval: 5s
   
   storage:
@@ -34,7 +34,7 @@ cache:
   httpPort: 8082
   capacityMB: 512
   defaultTTL: 3600
-  hotspotThreshold: 100.0
+  hotspotThreshold: 10.0
   hotspotDecayRate: 0.65
 
 telemetry:

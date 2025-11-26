@@ -1,168 +1,41 @@
-2025-11-11T16:16:27.995-0800	[34mINFO[0m	config/config.go:297	Loaded configuration	{"logger.active": true, "logger.level": "info", "logger.encoding": "console", "logger.mode": "stdout", "logger.file.path": "", "logger.file.maxSizeMB": 0, "logger.file.maxBackups": 0, "logger.file.maxAgeDays": 0, "logger.file.compress": false, "dht.idBits": 66, "dht.mode": "private", "dht.deBruijn.degree": 8, "dht.deBruijn.fixInterval": "5s", "dht.deBruijn.fixIntervalMs": 5000, "dht.storage.fixInterval": "20s", "dht.storage.fixIntervalMs": 20000, "dht.faultTolerance.successorListSize": 8, "dht.faultTolerance.stabilizationInterval": "2s", "dht.faultTolerance.stabilizationIntervalMs": 2000, "dht.faultTolerance.failureTimeout": "1s", "dht.faultTolerance.failureTimeoutMs": 1000, "dht.bootstrap.mode": "static", "dht.bootstrap.peers": ["localhost:4000"], "dht.bootstrap.register.hostedZoneId": "", "dht.bootstrap.register.domainSuffix": "", "dht.bootstrap.register.ttl": 0, "dht.bootstrap.register.region": "", "node.id": "", "node.host": "localhost", "node.bind": "0.0.0.0", "node.port": 4002, "telemetry.tracing.enabled": false, "telemetry.tracing.exporter": "", "telemetry.tracing.endpoint": "", "cache.enabled": true, "cache.httpPort": 8082, "cache.capacityMB": 512, "cache.defaultTTL": 3600, "cache.hotspotThreshold": 100, "cache.hotspotDecayRate": 0.65}
-2025-11-11T16:16:28.053-0800	[34mINFO[0m	node	node/main.go:101	New Node initializing	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}}
-2025/11/11 16:16:28 Tracing disabled
-2025-11-11T16:16:28.053-0800	[34mINFO[0m	node	node/main.go:130	initialized web cache	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "capacity_mb": 512}
-2025-11-11T16:16:28.054-0800	[34mINFO[0m	node	node/main.go:137	initialized hotspot detector	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "threshold": 100, "decay_rate": 0.65}
-2025-11-11T16:16:28.054-0800	[34mINFO[0m	node	node/main.go:237	resolved bootstrap peers	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "peers": ["localhost:4000"]}
-2025-11-11T16:16:28.054-0800	[34mINFO[0m	node.http-server	server/http.go:70	HTTP cache server starting	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "addr": ":8082"}
-2025-11-11T16:16:28.076-0800	[34mINFO[0m	node	logicnode/node.go:72	join: candidate successor found	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "bootstrap": "localhost:4000", "successor": {"addr":"localhost:4000","id":"0x004f424bb575238275"}}
-2025-11-11T16:16:28.079-0800	[34mINFO[0m	node	logicnode/node.go:103	join: successor has predecessor	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "predecessor": {"addr":"localhost:4001","id":"0x0051ee3541f65b0e86"}}
-2025-11-11T16:16:28.082-0800	[33mWARN[0m	node	logicnode/operation.go:296	FindSuccessorStep: de Bruijn failed or empty, falling back to successor	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "target": "0x0084560b764c02d190", "nextHop": {"addr":"localhost:4000","id":"0x004f424bb575238275"}}
-2025-11-11T16:16:28.083-0800	[34mINFO[0m	node	logicnode/node.go:135	join: completed successfully	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "successor": {"addr":"localhost:4000","id":"0x004f424bb575238275"}}
-2025-11-11T16:16:28.083-0800	[34mINFO[0m	node	node/main.go:259	node registered successfully	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}}
-2025-11-11T16:16:30.124-0800	[34mINFO[0m	node	logicnode/operation.go:414	Notify: predecessor updated	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "newPredecessor": {"addr":"localhost:4003","id":"0x011c1f485b12f6f310"}, "oldPredecessor": {"addr":"localhost:4001","id":"0x0051ee3541f65b0e86"}}
-2025-11-11T16:17:48.909-0800	[34mINFO[0m	node.http-server	server/http.go:151	DHT lookup complete	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "url": "https://www.twitch.tv", "hash": "0x0106d893c3c48483eb", "responsible": {"addr":"localhost:4003","id":"0x011c1f485b12f6f310"}, "lookup_latency_ms": 1}
-2025-11-11T16:17:48.909-0800	[34mINFO[0m	node.http-server	server/http.go:209	Forwarding to responsible node	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "url": "https://www.twitch.tv", "hash": "0x0106d893c3c48483eb", "responsible_from_lookup": {"addr":"localhost:4003","id":"0x011c1f485b12f6f310"}, "forward_target": {"addr":"localhost:4003","id":"0x011c1f485b12f6f310"}}
-2025-11-11T16:17:48.920-0800	[34mINFO[0m	node.http-server	server/http.go:436	Request proxied successfully	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "url": "https://www.twitch.tv", "target_node": "localhost:4003", "total_latency_ms": 11, "size_bytes": 175071}
-2025-11-11T17:16:28.054-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
-2025-11-11T17:16:28.054-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
-2025-11-11T18:16:28.054-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
-2025-11-11T18:16:28.054-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
-2025-11-11T20:46:42.530-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
-2025-11-11T20:46:42.531-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
-2025-11-11T20:46:44.029-0800	[31mERROR[0m	node	logicnode/operation.go:286	FindSuccessorStep: lookup interrupted by timeout/cancel	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "tryIdx": 0, "addr": "localhost:4001", "err": null}
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:286
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorInit
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:185
-KoordeDHT/internal/node/logicnode.(*Node).fixDeBruijn
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/worker.go:456
-KoordeDHT/internal/node/logicnode.(*Node).StartStabilizers.func2
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/worker.go:49
-2025-11-11T20:46:44.030-0800	[33mWARN[0m	node	logicnode/worker.go:459	fixDeBruijn: could not find successor	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "target": "0x0084560b764c02d190", "err": "context deadline exceeded"}
-2025-11-11T20:46:44.142-0800	[33mWARN[0m	node	logicnode/worker.go:405	checkPredecessor: predecessor unresponsive, clearing	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "pred": {"addr":"localhost:4003","id":"0x011c1f485b12f6f310"}, "err": "client: Ping RPC failed: rpc error: code = DeadlineExceeded desc = context deadline exceeded"}
-2025-11-11T20:46:44.735-0800	[31mERROR[0m	node	logicnode/operation.go:286	FindSuccessorStep: lookup interrupted by timeout/cancel	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "tryIdx": 1, "addr": "localhost:4003", "err": null}
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:286
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/server.(*dhtService).FindSuccessor
-	D:/CS6650/KoordeDHT-web-cache/internal/node/server/dht_service.go:115
-KoordeDHT/internal/api/dht/v1._DHT_FindSuccessor_Handler
-	D:/CS6650/KoordeDHT-web-cache/internal/api/dht/v1/node_grpc.pb.go:255
-google.golang.org/grpc.(*Server).processUnaryRPC
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1431
-google.golang.org/grpc.(*Server).handleStream
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1842
-google.golang.org/grpc.(*Server).serveStreams.func2.1
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1061
-2025-11-11T20:46:44.740-0800	[31mERROR[0m	node	logicnode/operation.go:286	FindSuccessorStep: lookup interrupted by timeout/cancel	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "tryIdx": 2, "addr": "localhost:4002", "err": "context canceled"}
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:286
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/server.(*dhtService).FindSuccessor
-	D:/CS6650/KoordeDHT-web-cache/internal/node/server/dht_service.go:115
-KoordeDHT/internal/api/dht/v1._DHT_FindSuccessor_Handler
-	D:/CS6650/KoordeDHT-web-cache/internal/api/dht/v1/node_grpc.pb.go:255
-google.golang.org/grpc.(*Server).processUnaryRPC
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1431
-google.golang.org/grpc.(*Server).handleStream
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1842
-google.golang.org/grpc.(*Server).serveStreams.func2.1
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1061
-2025-11-11T20:46:44.740-0800	[31mERROR[0m	node	logicnode/operation.go:286	FindSuccessorStep: lookup interrupted by timeout/cancel	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "tryIdx": 2, "addr": "localhost:4002", "err": "context canceled"}
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:286
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/server.(*dhtService).FindSuccessor
-	D:/CS6650/KoordeDHT-web-cache/internal/node/server/dht_service.go:115
-KoordeDHT/internal/api/dht/v1._DHT_FindSuccessor_Handler
-	D:/CS6650/KoordeDHT-web-cache/internal/api/dht/v1/node_grpc.pb.go:255
-google.golang.org/grpc.(*Server).processUnaryRPC
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1431
-google.golang.org/grpc.(*Server).handleStream
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1842
-google.golang.org/grpc.(*Server).serveStreams.func2.1
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1061
-2025-11-11T20:46:44.740-0800	[31mERROR[0m	node	logicnode/operation.go:286	FindSuccessorStep: lookup interrupted by timeout/cancel	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "tryIdx": 2, "addr": "localhost:4002", "err": "context canceled"}
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:286
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/server.(*dhtService).FindSuccessor
-	D:/CS6650/KoordeDHT-web-cache/internal/node/server/dht_service.go:115
-KoordeDHT/internal/api/dht/v1._DHT_FindSuccessor_Handler
-	D:/CS6650/KoordeDHT-web-cache/internal/api/dht/v1/node_grpc.pb.go:255
-google.golang.org/grpc.(*Server).processUnaryRPC
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1431
-google.golang.org/grpc.(*Server).handleStream
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1842
-google.golang.org/grpc.(*Server).serveStreams.func2.1
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1061
-2025-11-11T20:46:44.741-0800	[31mERROR[0m	node	logicnode/operation.go:286	FindSuccessorStep: lookup interrupted by timeout/cancel	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "tryIdx": 2, "addr": "localhost:4002", "err": "context canceled"}
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:286
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/server.(*dhtService).FindSuccessor
-	D:/CS6650/KoordeDHT-web-cache/internal/node/server/dht_service.go:115
-KoordeDHT/internal/api/dht/v1._DHT_FindSuccessor_Handler
-	D:/CS6650/KoordeDHT-web-cache/internal/api/dht/v1/node_grpc.pb.go:255
-google.golang.org/grpc.(*Server).processUnaryRPC
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1431
-google.golang.org/grpc.(*Server).handleStream
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1842
-google.golang.org/grpc.(*Server).serveStreams.func2.1
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1061
-2025-11-11T20:46:44.741-0800	[31mERROR[0m	node	logicnode/operation.go:286	FindSuccessorStep: lookup interrupted by timeout/cancel	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "tryIdx": 2, "addr": "localhost:4002", "err": "context canceled"}
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:286
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:270
-KoordeDHT/internal/node/server.(*dhtService).FindSuccessor
-	D:/CS6650/KoordeDHT-web-cache/internal/node/server/dht_service.go:115
-KoordeDHT/internal/api/dht/v1._DHT_FindSuccessor_Handler
-	D:/CS6650/KoordeDHT-web-cache/internal/api/dht/v1/node_grpc.pb.go:255
-google.golang.org/grpc.(*Server).processUnaryRPC
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1431
-google.golang.org/grpc.(*Server).handleStream
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1842
-google.golang.org/grpc.(*Server).serveStreams.func2.1
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1061
-2025-11-11T20:46:44.741-0800	[31mERROR[0m	node	logicnode/operation.go:286	FindSuccessorStep: lookup interrupted by timeout/cancel	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "tryIdx": 2, "addr": "localhost:4002", "err": "context canceled"}
-KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
-	D:/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:286
-KoordeDHT/internal/node/server.(*dhtService).FindSuccessor
-	D:/CS6650/KoordeDHT-web-cache/internal/node/server/dht_service.go:115
-KoordeDHT/internal/api/dht/v1._DHT_FindSuccessor_Handler
-	D:/CS6650/KoordeDHT-web-cache/internal/api/dht/v1/node_grpc.pb.go:255
-google.golang.org/grpc.(*Server).processUnaryRPC
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1431
-google.golang.org/grpc.(*Server).handleStream
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1842
-google.golang.org/grpc.(*Server).serveStreams.func2.1
-	C:/Users/shiyu/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1061
-2025-11-11T20:46:45.027-0800	[34mINFO[0m	node	logicnode/operation.go:414	Notify: predecessor updated	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "newPredecessor": {"addr":"localhost:4001","id":"0x0051ee3541f65b0e86"}, "oldPredecessor": null}
-2025-11-11T20:46:45.316-0800	[34mINFO[0m	node	logicnode/operation.go:414	Notify: predecessor updated	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "newPredecessor": {"addr":"localhost:4003","id":"0x011c1f485b12f6f310"}, "oldPredecessor": {"addr":"localhost:4001","id":"0x0051ee3541f65b0e86"}}
+2025-11-12T16:08:14.011-0800	[34mINFO[0m	config/config.go:297	Loaded configuration	{"logger.active": true, "logger.level": "info", "logger.encoding": "console", "logger.mode": "stdout", "logger.file.path": "", "logger.file.maxSizeMB": 0, "logger.file.maxBackups": 0, "logger.file.maxAgeDays": 0, "logger.file.compress": false, "dht.idBits": 66, "dht.mode": "private", "dht.deBruijn.degree": 8, "dht.deBruijn.fixInterval": "5s", "dht.deBruijn.fixIntervalMs": 5000, "dht.storage.fixInterval": "20s", "dht.storage.fixIntervalMs": 20000, "dht.faultTolerance.successorListSize": 8, "dht.faultTolerance.stabilizationInterval": "2s", "dht.faultTolerance.stabilizationIntervalMs": 2000, "dht.faultTolerance.failureTimeout": "1s", "dht.faultTolerance.failureTimeoutMs": 1000, "dht.bootstrap.mode": "static", "dht.bootstrap.peers": ["localhost:4000"], "dht.bootstrap.register.hostedZoneId": "", "dht.bootstrap.register.domainSuffix": "", "dht.bootstrap.register.ttl": 0, "dht.bootstrap.register.region": "", "node.id": "", "node.host": "localhost", "node.bind": "0.0.0.0", "node.port": 4002, "telemetry.tracing.enabled": false, "telemetry.tracing.exporter": "", "telemetry.tracing.endpoint": "", "cache.enabled": true, "cache.httpPort": 8082, "cache.capacityMB": 512, "cache.defaultTTL": 3600, "cache.hotspotThreshold": 10, "cache.hotspotDecayRate": 0.65}
+2025-11-12T16:08:14.018-0800	[34mINFO[0m	node	node/main.go:101	New Node initializing	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}}
+2025/11/12 16:08:14 Tracing disabled
+2025-11-12T16:08:14.019-0800	[34mINFO[0m	node	node/main.go:130	initialized web cache	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "capacity_mb": 512}
+2025-11-12T16:08:14.019-0800	[34mINFO[0m	node	node/main.go:137	initialized hotspot detector	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "threshold": 10, "decay_rate": 0.65}
+2025-11-12T16:08:14.020-0800	[34mINFO[0m	node	node/main.go:237	resolved bootstrap peers	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "peers": ["localhost:4000"]}
+2025-11-12T16:08:14.020-0800	[34mINFO[0m	node.http-server	server/http.go:70	HTTP cache server starting	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "addr": ":8082"}
+2025-11-12T16:08:14.060-0800	[34mINFO[0m	node	logicnode/node.go:72	join: candidate successor found	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "bootstrap": "localhost:4000", "successor": {"addr":"localhost:4000","id":"0x004f424bb575238275"}}
+2025-11-12T16:08:14.084-0800	[34mINFO[0m	node	logicnode/node.go:103	join: successor has predecessor	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "predecessor": {"addr":"localhost:4001","id":"0x0051ee3541f65b0e86"}}
+2025-11-12T16:08:14.103-0800	[33mWARN[0m	node	logicnode/operation.go:296	FindSuccessorStep: de Bruijn failed or empty, falling back to successor	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "target": "0x0084560b764c02d190", "nextHop": {"addr":"localhost:4000","id":"0x004f424bb575238275"}}
+2025-11-12T16:08:14.105-0800	[34mINFO[0m	node	logicnode/node.go:135	join: completed successfully	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "successor": {"addr":"localhost:4000","id":"0x004f424bb575238275"}}
+2025-11-12T16:08:14.106-0800	[34mINFO[0m	node	node/main.go:259	node registered successfully	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}}
+2025-11-12T16:08:16.091-0800	[34mINFO[0m	node	logicnode/operation.go:414	Notify: predecessor updated	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "newPredecessor": {"addr":"localhost:4003","id":"0x011c1f485b12f6f310"}, "oldPredecessor": {"addr":"localhost:4001","id":"0x0051ee3541f65b0e86"}}
+2025-11-12T16:08:20.131-0800	[34mINFO[0m	node	logicnode/operation.go:414	Notify: predecessor updated	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "newPredecessor": {"addr":"localhost:4005","id":"0x016adf1cbc1f56bed2"}, "oldPredecessor": {"addr":"localhost:4003","id":"0x011c1f485b12f6f310"}}
+2025-11-12T16:08:54.189-0800	[34mINFO[0m	node	logicnode/operation.go:414	Notify: predecessor updated	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "newPredecessor": {"addr":"localhost:4022","id":"0x017fcd87d9da7e1a9e"}, "oldPredecessor": {"addr":"localhost:4005","id":"0x016adf1cbc1f56bed2"}}
+2025-11-12T17:08:14.020-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-12T17:08:14.021-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-12T20:43:38.734-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-12T20:43:38.735-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-12T21:43:38.734-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-12T21:43:38.736-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-12T22:43:38.734-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-12T22:43:38.736-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-12T23:43:38.734-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-12T23:43:38.735-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-12T23:56:47.020-0800	[33mWARN[0m	node	logicnode/worker.go:185	stabilize: could not get predecessor from successor	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "succ": {"addr":"localhost:4047","id":"0x0190f4e560c540cabf"}, "err": "client: GetPredecessor RPC failed: rpc error: code = DeadlineExceeded desc = context deadline exceeded"}
+2025-11-13T03:15:16.613-0800	[33mWARN[0m	node	logicnode/worker.go:194	stabilize: successor unresponsive, attempting promotion	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "old_successor": {"addr":"localhost:4047","id":"0x0190f4e560c540cabf"}}
+2025-11-13T09:09:54.062-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-13T09:09:54.063-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-13T10:09:54.061-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-13T10:09:54.062-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-13T11:09:54.062-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-13T11:09:54.062-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-13T13:42:32.050-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-13T13:42:32.051-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-13T14:43:33.486-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-13T14:43:33.488-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-13T15:43:33.486-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-13T15:43:33.487-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-13T16:47:01.586-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}
+2025-11-13T16:47:01.587-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4002","id":"0x01908ac16ec9805a32"}, "count": 0}

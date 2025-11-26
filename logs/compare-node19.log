@@ -1,0 +1,323 @@
+2025-11-24T20:58:57.066-0800	[34mINFO[0m	config/config.go:302	Loaded configuration	{"logger.active": true, "logger.level": "info", "logger.encoding": "console", "logger.mode": "stdout", "logger.file.path": "", "logger.file.maxSizeMB": 0, "logger.file.maxBackups": 0, "logger.file.maxAgeDays": 0, "logger.file.compress": false, "dht.idBits": 66, "dht.mode": "private", "dht.deBruijn.degree": 8, "dht.deBruijn.fixInterval": "3s", "dht.deBruijn.fixIntervalMs": 3000, "dht.storage.fixInterval": "20s", "dht.storage.fixIntervalMs": 20000, "dht.faultTolerance.successorListSize": 8, "dht.faultTolerance.stabilizationInterval": "2s", "dht.faultTolerance.stabilizationIntervalMs": 2000, "dht.faultTolerance.failureTimeout": "1s", "dht.faultTolerance.failureTimeoutMs": 1000, "dht.bootstrap.mode": "static", "dht.bootstrap.peers": ["localhost:4000"], "dht.bootstrap.register.hostedZoneId": "", "dht.bootstrap.register.domainSuffix": "", "dht.bootstrap.register.ttl": 0, "dht.bootstrap.register.region": "", "node.id": "", "node.host": "localhost", "node.bind": "0.0.0.0", "node.port": 4019, "telemetry.tracing.enabled": false, "telemetry.tracing.exporter": "", "telemetry.tracing.endpoint": "", "cache.enabled": true, "cache.httpPort": 8099, "cache.capacityMB": 256, "cache.defaultTTL": 3600, "cache.hotspotThreshold": 10, "cache.hotspotDecayRate": 0.65}
+2025-11-24T20:58:57.112-0800	[34mINFO[0m	node	node/main.go:103	New Node initializing	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}}
+2025-11-24T20:58:57.114-0800	[34mINFO[0m	node	node/main.go:124	initialized web cache	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "capacity_mb": 256}
+2025-11-24T20:58:57.114-0800	[34mINFO[0m	node	node/main.go:131	initialized hotspot detector	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "threshold": 10, "decay_rate": 0.65}
+2025-11-24T20:58:57.115-0800	[34mINFO[0m	node	node/main.go:185	Initialized Koorde node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}}
+2025-11-24T20:58:57.115-0800	[34mINFO[0m	node	node/main.go:261	resolved bootstrap peers	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "peers": ["localhost:4000"]}
+2025-11-24T20:58:57.115-0800	[34mINFO[0m	node.http-server	server/http.go:93	HTTP cache server starting	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "addr": ":8099"}
+2025-11-24T20:58:57.135-0800	[34mINFO[0m	node	logicnode/node.go:74	join: candidate successor found	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "bootstrap": "localhost:4000", "successor": {"addr":"localhost:4016","id":"0x03e94e912bcf7bb769"}}
+2025-11-24T20:58:57.138-0800	[34mINFO[0m	node	logicnode/node.go:105	join: successor has predecessor	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "predecessor": {"addr":"localhost:4011","id":"0x03b6b99475a18d9035"}}
+2025-11-24T20:58:57.141-0800	[33mWARN[0m	node	logicnode/operation.go:406	FindSuccessorStep: de Bruijn failed or empty, falling back to successor	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "target": "0x03ebb3635b68c27d28", "nextHop": {"addr":"localhost:4016","id":"0x03e94e912bcf7bb769"}}
+2025-11-24T20:58:57.145-0800	[34mINFO[0m	node	logicnode/node.go:138	join: completed successfully	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "successor": {"addr":"localhost:4016","id":"0x03e94e912bcf7bb769"}}
+2025-11-24T20:58:57.146-0800	[34mINFO[0m	node	node/main.go:283	node registered successfully	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}}
+2025-11-24T20:59:20.630-0800	[34mINFO[0m	node	logicnode/operation.go:541	Notify: predecessor updated	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "newPredecessor": {"addr":"localhost:4005","id":"0x016adf1cbc1f56bed2"}, "oldPredecessor": {"addr":"localhost:4011","id":"0x03b6b99475a18d9035"}}
+2025-11-24T20:59:20.909-0800	[34mINFO[0m	node	logicnode/operation.go:541	Notify: predecessor updated	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "newPredecessor": {"addr":"localhost:4006","id":"0x01943b269be0206d7d"}, "oldPredecessor": {"addr":"localhost:4005","id":"0x016adf1cbc1f56bed2"}}
+2025-11-24T20:59:21.055-0800	[34mINFO[0m	node	logicnode/operation.go:541	Notify: predecessor updated	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "newPredecessor": {"addr":"localhost:4025","id":"0x01dbb7a1d63cedf3bd"}, "oldPredecessor": {"addr":"localhost:4006","id":"0x01943b269be0206d7d"}}
+2025-11-24T20:59:21.286-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/delay/2", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:21.286-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/delay/2", "hash": "0x01caf5206045a3cf61", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:21.414-0800	[34mINFO[0m	node.http-server	server/http.go:173	DHT lookup complete	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/robots.txt", "hash": "0x00d5ea21672bd0fb7b", "responsible": {"addr":"localhost:4005","id":"0x016adf1cbc1f56bed2"}, "lookup_latency_ms": 6}
+2025-11-24T20:59:21.415-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/robots.txt", "hash": "0x00d5ea21672bd0fb7b", "responsible_from_lookup": {"addr":"localhost:4005","id":"0x016adf1cbc1f56bed2"}, "forward_target": {"addr":"localhost:4005","id":"0x016adf1cbc1f56bed2"}}
+2025-11-24T20:59:21.477-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:21.479-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "hash": "0x01b34e14519259b010", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:21.509-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/bytes/4096", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:21.510-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/bytes/4096", "hash": "0x01b7e29f894c7989ac", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:21.557-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:21.558-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "hash": "0x01b34e14519259b010", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:21.656-0800	[34mINFO[0m	node.http-server	server/http.go:173	DHT lookup complete	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/robots.txt", "hash": "0x00d5ea21672bd0fb7b", "responsible": {"addr":"localhost:4005","id":"0x016adf1cbc1f56bed2"}, "lookup_latency_ms": 5}
+2025-11-24T20:59:21.657-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/robots.txt", "hash": "0x00d5ea21672bd0fb7b", "responsible_from_lookup": {"addr":"localhost:4005","id":"0x016adf1cbc1f56bed2"}, "forward_target": {"addr":"localhost:4005","id":"0x016adf1cbc1f56bed2"}}
+2025-11-24T20:59:21.695-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/bytes/4096", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:21.696-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/bytes/4096", "hash": "0x01b7e29f894c7989ac", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:21.722-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/bytes/4096", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:21.723-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/bytes/4096", "hash": "0x01b7e29f894c7989ac", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:21.765-0800	[34mINFO[0m	node.http-server	server/http.go:617	Request proxied successfully	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/robots.txt", "target_node": "localhost:4005", "total_latency_ms": 113, "size_bytes": 30}
+2025-11-24T20:59:21.805-0800	[34mINFO[0m	node.http-server	server/http.go:617	Request proxied successfully	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/robots.txt", "target_node": "localhost:4005", "total_latency_ms": 396, "size_bytes": 30}
+2025-11-24T20:59:21.858-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:21.858-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "hash": "0x01b34e14519259b010", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:21.878-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:21.879-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "hash": "0x01b34e14519259b010", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.197-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.198-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "hash": "0x01b34e14519259b010", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.255-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/bytes/4096", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.256-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/bytes/4096", "hash": "0x01b7e29f894c7989ac", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.316-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.316-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "hash": "0x01b34e14519259b010", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.436-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.437-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "hash": "0x01b34e14519259b010", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.445-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.446-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "hash": "0x01b34e14519259b010", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.472-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/delay/2", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.473-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/delay/2", "hash": "0x01caf5206045a3cf61", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.523-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.524-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "hash": "0x01b34e14519259b010", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.525-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.526-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "hash": "0x01b34e14519259b010", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.553-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/bytes/4096", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.553-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/bytes/4096", "hash": "0x01b7e29f894c7989ac", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.594-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.594-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "hash": "0x01b34e14519259b010", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.664-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.664-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/deny", "hash": "0x01b34e14519259b010", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:22.926-0800	[34mINFO[0m	node.http-server	server/http.go:173	DHT lookup complete	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/robots.txt", "hash": "0x00d5ea21672bd0fb7b", "responsible": {"addr":"localhost:4005","id":"0x016adf1cbc1f56bed2"}, "lookup_latency_ms": 6}
+2025-11-24T20:59:22.927-0800	[34mINFO[0m	node.http-server	server/http.go:215	Cache HIT (near)	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/robots.txt", "size_bytes": 30, "latency_ms": 7}
+2025-11-24T20:59:23.092-0800	[34mINFO[0m	node.http-server	server/http.go:256	Using de Bruijn neighbor as Koorde fallback	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/delay/2", "target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:23.092-0800	[34mINFO[0m	node.http-server	server/http.go:349	Forwarding to responsible node	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "url": "https://httpbin.org/delay/2", "hash": "0x01caf5206045a3cf61", "responsible_from_lookup": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "forward_target": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-24T20:59:28.245-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/delay/2", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/delay/2\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109
+2025-11-24T20:59:28.245-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/bytes/4096", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/bytes/4096\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109
+2025-11-24T20:59:28.247-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/bytes/4096", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/bytes/4096\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109
+2025-11-24T20:59:28.249-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/delay/2", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/delay/2\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109
+2025-11-24T20:59:28.253-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/deny", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/deny\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109
+2025-11-24T20:59:28.258-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/deny", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/deny\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109
+2025-11-24T20:59:28.262-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/deny", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/deny\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109
+2025-11-24T20:59:28.264-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/deny", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/deny\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109
+2025-11-24T20:59:28.269-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/deny", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/deny\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109
+2025-11-24T20:59:28.273-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/bytes/4096", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/bytes/4096\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109
+2025-11-24T20:59:28.274-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/delay/2", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/delay/2\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109
+2025-11-24T20:59:28.276-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/bytes/4096", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/bytes/4096\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109
+2025-11-24T20:59:28.278-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/bytes/4096", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/bytes/4096\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109
+2025-11-24T20:59:28.281-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/deny", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/deny\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109
+2025-11-24T20:59:28.283-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/deny", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/deny\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109
+2025-11-24T20:59:28.285-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/deny", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/deny\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109
+2025-11-24T20:59:28.286-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/deny", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/deny\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109
+2025-11-24T20:59:28.288-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/deny", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/deny\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109
+2025-11-24T20:59:28.289-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/deny", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/deny\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109
+2025-11-24T20:59:28.290-0800	[31mERROR[0m	node.http-server	server/http.go:563	Proxy request failed	{"self": {"addr":"localhost:4019","id":"0x01fd766c6b6d184fa5"}, "proxy_url": "http://localhost:8094/cache?url=https://httpbin.org/deny", "err": "Get \"http://localhost:8094/cache?url=https://httpbin.org/deny\": context canceled"}
+KoordeDHT/internal/node/server.(*HTTPCacheServer).proxyToNode
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:563
+KoordeDHT/internal/node/server.(*HTTPCacheServer).handleCacheRequest
+	D:/CS6650/KoordeDHT-web-cache/internal/node/server/http.go:355
+net/http.HandlerFunc.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2322
+net/http.(*ServeMux).ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:2861
+net/http.serverHandler.ServeHTTP
+	C:/Program Files/Go/src/net/http/server.go:3340
+net/http.(*conn).serve
+	C:/Program Files/Go/src/net/http/server.go:2109

@@ -1,0 +1,64 @@
+2025-11-12T16:09:32.268-0800	[34mINFO[0m	config/config.go:297	Loaded configuration	{"logger.active": true, "logger.level": "info", "logger.encoding": "console", "logger.mode": "stdout", "logger.file.path": "", "logger.file.maxSizeMB": 0, "logger.file.maxBackups": 0, "logger.file.maxAgeDays": 0, "logger.file.compress": false, "dht.idBits": 66, "dht.mode": "private", "dht.deBruijn.degree": 8, "dht.deBruijn.fixInterval": "5s", "dht.deBruijn.fixIntervalMs": 5000, "dht.storage.fixInterval": "20s", "dht.storage.fixIntervalMs": 20000, "dht.faultTolerance.successorListSize": 8, "dht.faultTolerance.stabilizationInterval": "2s", "dht.faultTolerance.stabilizationIntervalMs": 2000, "dht.faultTolerance.failureTimeout": "1s", "dht.faultTolerance.failureTimeoutMs": 1000, "dht.bootstrap.mode": "static", "dht.bootstrap.peers": ["localhost:4000"], "dht.bootstrap.register.hostedZoneId": "", "dht.bootstrap.register.domainSuffix": "", "dht.bootstrap.register.ttl": 0, "dht.bootstrap.register.region": "", "node.id": "", "node.host": "localhost", "node.bind": "0.0.0.0", "node.port": 4041, "telemetry.tracing.enabled": false, "telemetry.tracing.exporter": "", "telemetry.tracing.endpoint": "", "cache.enabled": true, "cache.httpPort": 8121, "cache.capacityMB": 512, "cache.defaultTTL": 3600, "cache.hotspotThreshold": 10, "cache.hotspotDecayRate": 0.65}
+2025-11-12T16:09:32.282-0800	[34mINFO[0m	node	node/main.go:101	New Node initializing	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}}
+2025/11/12 16:09:32 Tracing disabled
+2025-11-12T16:09:32.285-0800	[34mINFO[0m	node	node/main.go:130	initialized web cache	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "capacity_mb": 512}
+2025-11-12T16:09:32.285-0800	[34mINFO[0m	node	node/main.go:137	initialized hotspot detector	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "threshold": 10, "decay_rate": 0.65}
+2025-11-12T16:09:32.286-0800	[34mINFO[0m	node	node/main.go:237	resolved bootstrap peers	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "peers": ["localhost:4000"]}
+2025-11-12T16:09:32.286-0800	[34mINFO[0m	node.http-server	server/http.go:70	HTTP cache server starting	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "addr": ":8121"}
+2025-11-12T16:09:32.363-0800	[34mINFO[0m	node	logicnode/node.go:72	join: candidate successor found	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "bootstrap": "localhost:4000", "successor": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-12T16:09:32.385-0800	[34mINFO[0m	node	logicnode/node.go:103	join: successor has predecessor	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "predecessor": {"addr":"localhost:4012","id":"0x031fc8d8bfb65680aa"}}
+2025-11-12T16:09:32.419-0800	[33mWARN[0m	node	logicnode/operation.go:296	FindSuccessorStep: de Bruijn failed or empty, falling back to successor	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "target": "0x00d7190b55bade7d38", "nextHop": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-12T16:09:32.467-0800	[34mINFO[0m	node	logicnode/node.go:135	join: completed successfully	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "successor": {"addr":"localhost:4014","id":"0x03532cc907496db765"}}
+2025-11-12T16:09:32.467-0800	[34mINFO[0m	node	node/main.go:259	node registered successfully	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}}
+2025-11-12T17:09:32.287-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-12T17:09:32.288-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-12T20:44:57.000-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-12T20:44:57.001-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-12T21:44:57.001-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-12T21:44:57.003-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-12T22:44:57.001-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-12T22:44:57.002-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-12T23:44:57.001-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-12T23:44:57.003-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-12T23:56:47.038-0800	[31mERROR[0m	node	logicnode/operation.go:286	FindSuccessorStep: lookup interrupted by timeout/cancel	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "tryIdx": 7, "addr": "localhost:4022", "err": null}
+KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
+	/mnt/d/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:286
+KoordeDHT/internal/node/server.(*dhtService).FindSuccessor
+	/mnt/d/CS6650/KoordeDHT-web-cache/internal/node/server/dht_service.go:115
+KoordeDHT/internal/api/dht/v1._DHT_FindSuccessor_Handler
+	/mnt/d/CS6650/KoordeDHT-web-cache/internal/api/dht/v1/node_grpc.pb.go:255
+google.golang.org/grpc.(*Server).processUnaryRPC
+	/home/yuzheng/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1431
+google.golang.org/grpc.(*Server).handleStream
+	/home/yuzheng/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1842
+google.golang.org/grpc.(*Server).serveStreams.func2.1
+	/home/yuzheng/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1061
+2025-11-13T03:15:16.911-0800	[33mWARN[0m	node	logicnode/operation.go:290	FindSuccessorStep: de Bruijn hop failed, trying previous candidate	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "tryIdx": 7, "failedNode": {"addr":"localhost:4022","id":"0x017fcd87d9da7e1a9e"}, "err": null}
+2025-11-13T03:15:17.012-0800	[31mERROR[0m	node	logicnode/operation.go:286	FindSuccessorStep: lookup interrupted by timeout/cancel	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "tryIdx": 6, "addr": "localhost:4005", "err": null}
+KoordeDHT/internal/node/logicnode.(*Node).FindSuccessorStep
+	/mnt/d/CS6650/KoordeDHT-web-cache/internal/node/logicnode/operation.go:286
+KoordeDHT/internal/node/server.(*dhtService).FindSuccessor
+	/mnt/d/CS6650/KoordeDHT-web-cache/internal/node/server/dht_service.go:115
+KoordeDHT/internal/api/dht/v1._DHT_FindSuccessor_Handler
+	/mnt/d/CS6650/KoordeDHT-web-cache/internal/api/dht/v1/node_grpc.pb.go:255
+google.golang.org/grpc.(*Server).processUnaryRPC
+	/home/yuzheng/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1431
+google.golang.org/grpc.(*Server).handleStream
+	/home/yuzheng/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1842
+google.golang.org/grpc.(*Server).serveStreams.func2.1
+	/home/yuzheng/go/pkg/mod/google.golang.org/grpc@v1.75.1/server.go:1061
+2025-11-13T03:15:17.432-0800	[33mWARN[0m	node	logicnode/operation.go:290	FindSuccessorStep: de Bruijn hop failed, trying previous candidate	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "tryIdx": 7, "failedNode": {"addr":"localhost:4022","id":"0x017fcd87d9da7e1a9e"}, "err": null}
+2025-11-13T09:11:12.329-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-13T09:11:12.329-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-13T10:11:12.328-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-13T10:11:12.329-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-13T11:11:12.329-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-13T11:11:12.329-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-13T13:43:50.317-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-13T13:43:50.318-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-13T14:44:51.752-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-13T14:44:51.753-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-13T15:44:51.753-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-13T15:44:51.756-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-13T16:48:19.853-0800	[34mINFO[0m	node	node/main.go:148	cleaned expired cache entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}
+2025-11-13T16:48:19.853-0800	[34mINFO[0m	node	node/main.go:151	cleaned stale hotspot entries	{"self": {"addr":"localhost:4041","id":"0x0330f4c92418764b3d"}, "count": 0}

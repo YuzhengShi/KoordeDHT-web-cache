@@ -1,0 +1,60 @@
+logger:
+  active: true             # Enable or disable logging (true | false)
+  level: "debug"            # Minimum log level: debug | info | warn | error
+  encoding: "console"      # Log output format: console (human-readable) | json
+  mode: "stdout"           # Log destination: stdout | file
+
+  file:                    # File logging settings (used only if mode = "file")
+    path: ""               # Path to the log file
+    maxSize: 100           # Maximum file size (in MB) before rotation
+    maxBackups: 3          # Number of rotated log files to keep
+    maxAge: 7              # Maximum age (in days) to retain old log files
+    compress: false        # Compress old log files on rotation (true | false)
+
+dht:
+  protocol: "chord"     # DHT protocol: koorde | chord
+  idBits: 66             # Identifier space size (keyspace = 2^idBits)
+  mode: "private"        # Network mode: public (real network) | private (local/isolated)
+
+  bootstrap:
+    mode: "static"       # Bootstrap mode: static | route53
+    peers: ["127.0.0.1:4000"]  # List of peer addresses (used if mode = "static", empty = create new DHT)
+
+    route53:
+      hostedZoneId: ""          # AWS Route53 hosted zone ID
+      domainSuffix: ""          # Domain suffix for SRV records (e.g., "koorde.dht")
+      ttl: 30                   # TTL for SRV records (in seconds)
+      region: ""                # AWS region for Route53 queries (e.g., "us-east-1")
+
+  deBruijn:
+    degree: 8                   # Degree of the de Bruijn graph (2 = minimal, log n = optimal; must be a power of 2)
+    fixInterval: 5s             # Periodic refresh interval for de Bruijn pointers
+
+  storage:
+    fixInterval: 20s            # Periodic refresh interval for key-value storage maintenance
+
+  faultTolerance:
+    successorListSize: 8        # Number of successors to maintain (≈ log n for fault tolerance)
+    stabilizationInterval: 2s   # Periodic interval for successor stabilization
+    failureTimeout: 1s          # Timeout for gRPC stabilization calls; nodes exceeding this timeout are marked as failed
+
+node:
+  id: ""
+  bind: "0.0.0.0"
+  host: "localhost"
+  port: 4001
+
+telemetry:
+  tracing:
+    enabled: false               # Enable or disable distributed tracing (true | false)
+    exporter:                    # Tracing exporter: otlp | jaeger
+    endpoint:                    # Exporter endpoint (OTLP or Jaeger collector address)
+
+# Web Cache Configuration
+cache:
+  enabled: true                    # Enable web caching functionality
+  httpPort: 8081                   # HTTP server port for cache requests
+  capacityMB: 1024                 # Cache capacity in megabytes (1 GB)
+  defaultTTL: 3600                 # Default TTL in seconds (1 hour)
+  hotspotThreshold: 1000.0         # Hotspot detection threshold (req/sec)
+  hotspotDecayRate: 0.65           # Exponential decay rate (gamma)

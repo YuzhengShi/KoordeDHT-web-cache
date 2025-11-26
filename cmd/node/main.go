@@ -6,8 +6,10 @@ import (
 	"KoordeDHT/internal/logger"
 	zapfactory "KoordeDHT/internal/logger/zap"
 	"KoordeDHT/internal/node/cache"
+	"KoordeDHT/internal/node/chord"
 	client2 "KoordeDHT/internal/node/client"
 	"KoordeDHT/internal/node/config"
+	"KoordeDHT/internal/node/dht"
 	logicnode2 "KoordeDHT/internal/node/logicnode"
 	routingtable2 "KoordeDHT/internal/node/routingtable"
 	server2 "KoordeDHT/internal/node/server"
@@ -104,14 +106,6 @@ func main() {
 	shutdown := telemetry.InitTracer(cfg.Telemetry, "KoordeDHT-Node", id)
 	defer shutdown(context.Background())
 
-	// Initialize routing table
-	rt := routingtable2.New(
-		&domainNode,
-		space,
-		routingtable2.WithLogger(lgr.Named("routingtable")),
-	)
-	lgr.Debug("initialized routing table")
-
 	// Initialize client pool
 	cp := client2.New(
 		id,
@@ -152,14 +146,44 @@ func main() {
 		}
 	}()
 
-	// Initialize node
-	n := logicnode2.New(
-		rt,
-		cp,
-		store,
-		logicnode2.WithLogger(lgr),
-	)
-	lgr.Debug("initialized new struct node")
+	// Initialize node based on protocol
+	var n dht.DHTNode
+
+	switch cfg.DHT.Protocol {
+	case "chord":
+		chordRT := chord.NewRoutingTable(
+			&domainNode,
+			space,
+			lgr.Named("chord-rt"),
+		)
+		n = chord.New(
+			space,
+			cp,
+			store,
+			chord.WithRoutingTable(chordRT),
+			chord.WithLogger(lgr),
+		)
+		lgr.Info("Initialized Chord node")
+
+	case "koorde":
+		fallthrough
+	default:
+		// Initialize Koorde routing table
+		rt := routingtable2.New(
+			&domainNode,
+			space,
+			routingtable2.WithLogger(lgr.Named("routingtable")),
+		)
+		lgr.Debug("initialized routing table")
+
+		n = logicnode2.New(
+			rt,
+			cp,
+			store,
+			logicnode2.WithLogger(lgr),
+		)
+		lgr.Info("Initialized Koorde node")
+	}
 
 	// Initialize gRPC server
 	var grpcOpts []grpc.ServerOption

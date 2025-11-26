@@ -1,0 +1,39 @@
+logger:
+  active: true
+  level: debug
+  encoding: console
+
+dht:
+  id_bits: 16
+  protocol: chord
+  mode: tcp
+  bootstrap:
+    mode: static
+    peers: []
+  debruijn:
+    degree: 2
+    fix_interval: 5s
+  fault_tolerance:
+    successor_list_size: 3
+    stabilization_interval: 2s
+    failure_timeout: 5s
+  storage:
+    fix_interval: 10s
+
+node:
+  id: ""
+  bind: "0.0.0.0"
+  host: ""
+  port: 4000
+
+cache:
+  capacity_mb: 100
+  http_port: 8080
+  hotspot_threshold: 10.0
+  hotspot_decay_rate: 0.9
+
+telemetry:
+  tracing:
+    enabled: false
+    endpoint: ""
+    sampler_ratio: 0.1

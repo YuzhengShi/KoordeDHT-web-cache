@@ -434,10 +434,10 @@ func (n *Node) checkPredecessor() {
 //  6. Update the local routing table and adjust client pool references
 func (n *Node) fixDeBruijn() {
 	self := n.rt.Self()
-	
+
 	// Step 1: Estimate network size for Section 4.2 optimization
 	estimatedN := n.EstimateNetworkSize()
-	
+
 	// Step 2: Compute fault-tolerant target using Section 4.2 algorithm
 	// This uses (k×m - x) instead of just (k×m) to ensure O(log n) backup nodes
 	target, err := n.rt.Space().ComputeFaultTolerantTarget(self.ID, estimatedN)
@@ -445,7 +445,7 @@ func (n *Node) fixDeBruijn() {
 		n.lgr.Error("fixDeBruijn: failed to compute fault-tolerant target", logger.F("err", err))
 		return
 	}
-	
+
 	n.lgr.Debug("fixDeBruijn: computed fault-tolerant target",
 		logger.F("self", self.ID.ToHexString(true)),
 		logger.F("target", target.ToHexString(true)),
@@ -497,15 +497,6 @@ func (n *Node) fixDeBruijn() {
 		}
 	}
 
-	// Snapshot current window
-	oldList := n.rt.DeBruijnList()
-	oldSet := make(map[string]*domain.Node)
-	for _, node := range oldList {
-		if node != nil {
-			oldSet[node.Addr] = node
-		}
-	}
-
 	// Step 3: build new window (digit 0 = anchor, others from anchor’s successor list)
 	newNodes := make([]*domain.Node, n.rt.Space().GraphGrade)
 	newNodes[0] = anchor
@@ -543,33 +534,124 @@ func (n *Node) fixDeBruijn() {
 		}
 	}
 
-	// Build set of new nodes
-	newSet := make(map[string]*domain.Node)
+	n.updateDeBruijnWindow(newNodes, "fixDeBruijn")
+}
+
+// seedDeBruijnWindow attempts to pre-populate the local de Bruijn window using
+// the provided anchor (typically the freshly discovered successor).
+func (n *Node) seedDeBruijnWindow(anchor *domain.Node) {
+	if anchor == nil {
+		return
+	}
+	required := n.rt.Space().GraphGrade
+	if required == 0 {
+		return
+	}
+	currentFilled := len(n.rt.DeBruijnList())
+	if currentFilled >= required {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), n.cp.FailureTimeout())
+	defer cancel()
+
+	cli, err := n.cp.GetFromPool(anchor.Addr)
+	var conn *grpc.ClientConn
+	if err != nil {
+		var dialErr error
+		cli, conn, dialErr = n.cp.DialEphemeral(anchor.Addr)
+		if dialErr != nil {
+			n.lgr.Warn("seedDeBruijn: could not dial anchor",
+				logger.FNode("anchor", anchor), logger.F("err", dialErr))
+			return
+		}
+		defer conn.Close()
+	}
+
+	succList, err := client.GetSuccessorList(ctx, cli, n.rt.Space())
+	if err != nil {
+		n.lgr.Warn("seedDeBruijn: failed to fetch successor list",
+			logger.FNode("anchor", anchor), logger.F("err", err))
+		return
+	}
+
+	newNodes := make([]*domain.Node, required)
+	newNodes[0] = anchor
+	slot := 1
+	for _, cand := range succList {
+		if slot >= required {
+			break
+		}
+		if cand == nil {
+			continue
+		}
+		newNodes[slot] = cand
+		slot++
+	}
+
+	filled := 0
 	for _, node := range newNodes {
 		if node != nil {
-			newSet[node.Addr] = node
+			filled++
 		}
 	}
 
-	// Step 4: update client pool references
+	if filled <= currentFilled {
+		n.lgr.Debug("seedDeBruijn: candidate window not better than current",
+			logger.FNode("anchor", anchor),
+			logger.F("current_filled", currentFilled),
+			logger.F("candidate_filled", filled))
+		return
+	}
+
+	n.updateDeBruijnWindow(newNodes, "seedDeBruijn")
+	n.lgr.Info("seedDeBruijn: prepopulated de Bruijn window",
+		logger.FNode("anchor", anchor),
+		logger.F("filled_entries", filled),
+		logger.F("required", required))
+}
+
+// updateDeBruijnWindow swaps the local de Bruijn window with the provided list,
+// updating client references as needed.
+func (n *Node) updateDeBruijnWindow(newNodes []*domain.Node, source string) {
+	oldList := n.rt.DeBruijnList()
+	oldSet := make(map[string]*domain.Node, len(oldList))
+	for _, node := range oldList {
+		if node != nil {
+			oldSet[node.Addr] = node
+		}
+	}
+
+	newSet := make(map[string]*domain.Node, len(newNodes))
+	filled := 0
+	for _, node := range newNodes {
+		if node != nil {
+			newSet[node.Addr] = node
+			filled++
+		}
+	}
+
 	for addr, cand := range newSet {
 		if _, ok := oldSet[addr]; !ok {
 			if err := n.cp.AddRef(addr); err != nil {
-				n.lgr.Warn("fixDeBruijn: failed to addref node",
+				n.lgr.Warn(source+": failed to addref node",
 					logger.FNode("node", cand), logger.F("err", err))
 			}
 		}
 	}
+
 	n.rt.SetDeBruijnList(newNodes)
+
 	for addr, old := range oldSet {
 		if _, ok := newSet[addr]; !ok {
 			if err := n.cp.Release(addr); err != nil {
-				n.lgr.Warn("fixDeBruijn: failed to release node",
+				n.lgr.Warn(source+": failed to release node",
 					logger.FNode("old", old), logger.F("err", err))
 			}
 		}
 	}
 
-	n.lgr.Debug("fixDeBruijn: updated de Bruijn window",
-		logger.F("degree", n.rt.Space().GraphGrade))
+	n.lgr.Debug(source+": updated de Bruijn window",
+		logger.F("degree", n.rt.Space().GraphGrade),
+		logger.F("filled_entries", filled))
 }

@@ -4,7 +4,7 @@ import (
 	clientv1 "KoordeDHT/internal/api/client/v1"
 	"KoordeDHT/internal/domain"
 	"KoordeDHT/internal/node/ctxutil"
-	"KoordeDHT/internal/node/logicnode"
+	"KoordeDHT/internal/node/dht"
 	"KoordeDHT/internal/node/telemetry"
 	"KoordeDHT/internal/node/telemetry/lookuptrace"
 	"context"
@@ -23,20 +23,20 @@ import (
 // Unlike dhtService (which is used for node-to-node communication),
 // clientService is intended for end-user clients.
 type clientService struct {
-	clientv1.UnimplementedClientAPIServer                 // forward compatibility with proto changes
-	node                                  *logicnode.Node // reference to the local Koorde node
+	clientv1.UnimplementedClientAPIServer             // forward compatibility with proto changes
+	node                                  dht.DHTNode // reference to the local DHT node
 }
 
 // NewClientService constructs a new client-facing gRPC service bound to the given node.
 //
 // Parameters:
-//   - n: pointer to the local Koorde node instance (must be non-nil)
+//   - n: pointer to the local DHT node instance (must be non-nil)
 //
 // Returns:
 //   - A clientv1.ClientAPIServer implementation suitable for gRPC registration.
 //
 // Panics if the provided node is nil.
-func NewClientService(n *logicnode.Node) clientv1.ClientAPIServer {
+func NewClientService(n dht.DHTNode) clientv1.ClientAPIServer {
 	if n == nil {
 		panic("NewClientService: node must not be nil")
 	}

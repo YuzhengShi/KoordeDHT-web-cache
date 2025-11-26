@@ -4,7 +4,7 @@ import (
 	"KoordeDHT/internal/domain"
 	"KoordeDHT/internal/logger"
 	"KoordeDHT/internal/node/cache"
-	"KoordeDHT/internal/node/logicnode"
+	"KoordeDHT/internal/node/dht"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,33 +12,56 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
+)
+
+const (
+	originCacheTTL = time.Hour
+	nearCacheTTL   = 5 * time.Minute
 )
 
 // HTTPCacheServer provides HTTP endpoints for web caching functionality
 type HTTPCacheServer struct {
-	node    *logicnode.Node
-	cache   *cache.WebCache
-	hotspot *cache.HotspotDetector
-	port    int
-	lgr     logger.Logger
-	server  *http.Server
+	node                 dht.DHTNode
+	cache                *cache.WebCache
+	hotspotDetector      *cache.HotspotDetector
+	port                 int
+	server               *http.Server
+	lgr                  logger.Logger
+	grpcToHTTPPortOffset int
 }
 
 // NewHTTPCacheServer creates a new HTTP cache server instance
 func NewHTTPCacheServer(
-	node *logicnode.Node,
+	node dht.DHTNode,
 	webCache *cache.WebCache,
-	hotspot *cache.HotspotDetector,
+	hotspotDetector *cache.HotspotDetector,
 	port int,
 	lgr logger.Logger,
 ) *HTTPCacheServer {
+	offset := 4080 // default offset used by legacy configs
+	if self := node.Self(); self != nil {
+		if _, portStr, err := net.SplitHostPort(self.Addr); err == nil {
+			if grpcPort, parseErr := strconv.Atoi(portStr); parseErr == nil {
+				offset = port - grpcPort
+			} else {
+				lgr.Warn("NewHTTPCacheServer: failed to parse self gRPC port, falling back to default offset",
+					logger.F("self_addr", self.Addr), logger.F("err", parseErr))
+			}
+		} else {
+			lgr.Warn("NewHTTPCacheServer: failed to split self address, falling back to default offset",
+				logger.F("self_addr", self.Addr), logger.F("err", err))
+		}
+	}
+
 	return &HTTPCacheServer{
-		node:    node,
-		cache:   webCache,
-		hotspot: hotspot,
-		port:    port,
-		lgr:     lgr,
+		node:                 node,
+		cache:                webCache,
+		hotspotDetector:      hotspotDetector,
+		port:                 port,
+		lgr:                  lgr,
+		grpcToHTTPPortOffset: offset,
 	}
 }
 
@@ -82,12 +105,12 @@ func (s *HTTPCacheServer) Stop(ctx context.Context) error {
 // handleCacheRequest processes cache requests for URLs
 //
 // Request flow:
-//   1. Check local cache (fast path)
-//   2. Check if URL is hot (hotspot detection)
-//   3. If hot: randomly distribute to any node
-//   4. If normal: DHT lookup to find responsible node
-//   5. If self is responsible: fetch from origin and cache
-//   6. If other node responsible: proxy HTTP request
+//  1. Check local cache (fast path)
+//  2. Check if URL is hot (hotspot detection)
+//  3. If hot: randomly distribute to any node
+//  4. If normal: DHT lookup to find responsible node
+//  5. If self is responsible: fetch from origin and cache
+//  6. If other node responsible: proxy HTTP request
 func (s *HTTPCacheServer) handleCacheRequest(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 
@@ -132,20 +155,19 @@ func (s *HTTPCacheServer) handleCacheRequest(w http.ResponseWriter, r *http.Requ
 		var err error
 		responsible, err = s.node.LookUp(ctx, urlHash)
 		if err != nil {
-			s.lgr.Error("DHT lookup failed",
+			s.lgr.Warn("DHT lookup failed, trying fallback strategies",
 				logger.F("url", url),
 				logger.F("hash", urlHash.ToHexString(true)),
 				logger.F("err", err))
-			http.Error(w, fmt.Sprintf("DHT lookup failed: %v", err), http.StatusInternalServerError)
-			return
+			// Don't return error immediately - try fallback strategies below
+			responsible = nil
 		}
 
 		if responsible == nil {
-			s.lgr.Error("DHT lookup returned nil node",
+			s.lgr.Debug("DHT lookup returned nil, will use fallback strategies",
 				logger.F("url", url),
 				logger.F("hash", urlHash.ToHexString(true)))
-			http.Error(w, "no responsible node found", http.StatusInternalServerError)
-			return
+			// Don't return error - continue to ownership check and fallback logic
 		}
 
 		s.lgr.Info("DHT lookup complete",
@@ -172,8 +194,17 @@ func (s *HTTPCacheServer) handleCacheRequest(w http.ResponseWriter, r *http.Requ
 			logger.F("owns_key", ownsKey),
 			logger.F("forwarded_header_isResponsible", isResponsible))
 	} else {
-		// No predecessor yet -> operate conservatively (assume ownership only in single-node scenario)
-		if len(s.node.SuccessorList()) <= 1 {
+		// No predecessor yet -> check if lookup returned self
+		// If DHT lookup says we're responsible, we should own it
+		// (This handles the case where stabilization hasn't completed yet)
+		if responsible != nil && responsible.ID.Equal(selfNode.ID) {
+			ownsKey = true
+			s.lgr.Debug("Ownership check (no predecessor, but lookup returned self)",
+				logger.F("url", url),
+				logger.F("hash", urlHash.ToHexString(true)),
+				logger.F("owns_key", ownsKey))
+		} else if len(s.node.SuccessorList()) <= 1 {
+			// Single-node scenario - we own everything
 			ownsKey = true
 		}
 	}
@@ -181,28 +212,137 @@ func (s *HTTPCacheServer) handleCacheRequest(w http.ResponseWriter, r *http.Requ
 	// STEP 4: If we do not own the key, forward it (even if lookup returned self)
 	if !ownsKey {
 		if entry, ok := s.cache.Get(url); ok {
-			s.lgr.Warn("Found stale cache entry for non-owned URL, removing",
+			s.lgr.Info("Cache HIT (near)",
 				logger.F("url", url),
-				logger.F("size_bytes", entry.Size))
-			s.cache.Delete(url)
+				logger.F("size_bytes", entry.Size),
+				logger.F("latency_ms", time.Since(start).Milliseconds()))
+
+			statusCode := entry.StatusCode
+			if statusCode < 100 {
+				statusCode = http.StatusOK
+			}
+
+			w.Header().Set("Content-Type", entry.ContentType)
+			w.Header().Set("X-Cache", "HIT-NEAR")
+			w.Header().Set("X-Entry-Node", s.node.Self().Addr)
+			w.Header().Set("X-Latency-Ms", fmt.Sprintf("%.2f", time.Since(start).Seconds()*1000))
+			w.WriteHeader(statusCode)
+			w.Write(entry.Content)
+			return
 		}
 
 		targetNode := responsible
+
+		// Protocol-specific fallback strategies
+		// Only use fallbacks that match the DHT protocol being used
+		isKoorde := len(s.node.DeBruijnList()) > 0
+		isChord := false
+		if _, ok := s.node.(interface{ FingerList() []*domain.Node }); ok {
+			isChord = true
+		}
+
+		// If lookup returned nil or self, try protocol-specific fallbacks
 		if targetNode == nil || targetNode.ID.Equal(selfNode.ID) {
-			// Fallback to first known successor that is not self
-			for _, succ := range s.node.SuccessorList() {
-				if succ != nil && !succ.ID.Equal(selfNode.ID) {
-					targetNode = succ
-					break
+			if isKoorde {
+				// Koorde-specific: Only use de Bruijn neighbors (not successor list - that's Chord-like)
+				s.lgr.Debug("Koorde lookup failed, trying de Bruijn neighbors",
+					logger.F("url", url),
+					logger.F("hash", urlHash.ToHexString(true)),
+					logger.F("debruijn_count", len(s.node.DeBruijnList())))
+
+				for _, db := range s.node.DeBruijnList() {
+					if db != nil && !db.ID.Equal(selfNode.ID) {
+						targetNode = db
+						s.lgr.Info("Using de Bruijn neighbor as Koorde fallback",
+							logger.F("url", url),
+							logger.FNode("target", targetNode))
+						break
+					}
+				}
+
+				// Retry lookup with longer timeout (still Koorde routing)
+				if targetNode == nil || targetNode.ID.Equal(selfNode.ID) {
+					s.lgr.Warn("Koorde de Bruijn fallback failed, retrying lookup with longer timeout",
+						logger.F("url", url),
+						logger.F("hash", urlHash.ToHexString(true)))
+
+					ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+					defer cancel()
+
+					retryResponsible, retryErr := s.node.LookUp(ctx, urlHash)
+					if retryErr == nil && retryResponsible != nil && !retryResponsible.ID.Equal(selfNode.ID) {
+						targetNode = retryResponsible
+						s.lgr.Info("Koorde retry lookup succeeded",
+							logger.F("url", url),
+							logger.FNode("target", targetNode))
+					}
+				}
+			} else if isChord {
+				// Chord-specific: Use finger table or successor list
+				s.lgr.Debug("Chord lookup failed, trying finger table and successor list",
+					logger.F("url", url),
+					logger.F("hash", urlHash.ToHexString(true)))
+
+				// Try finger table first
+				if chordNode, ok := s.node.(interface{ FingerList() []*domain.Node }); ok {
+					for _, finger := range chordNode.FingerList() {
+						if finger != nil && !finger.ID.Equal(selfNode.ID) {
+							targetNode = finger
+							s.lgr.Info("Using finger table entry as Chord fallback",
+								logger.F("url", url),
+								logger.FNode("target", targetNode))
+							break
+						}
+					}
+				}
+
+				// Fallback to successor list
+				if targetNode == nil || targetNode.ID.Equal(selfNode.ID) {
+					for _, succ := range s.node.SuccessorList() {
+						if succ != nil && !succ.ID.Equal(selfNode.ID) {
+							targetNode = succ
+							s.lgr.Info("Using successor as Chord fallback",
+								logger.F("url", url),
+								logger.FNode("target", targetNode))
+							break
+						}
+					}
+				}
+			} else {
+				// Unknown protocol - try generic fallback
+				s.lgr.Warn("Unknown DHT protocol, trying generic fallbacks",
+					logger.F("url", url),
+					logger.F("hash", urlHash.ToHexString(true)))
+
+				// Try successor list as last resort
+				for _, succ := range s.node.SuccessorList() {
+					if succ != nil && !succ.ID.Equal(selfNode.ID) {
+						targetNode = succ
+						break
+					}
 				}
 			}
 		}
 
+		// Final check: Fail fast if no valid target found (don't assume ownership)
+		// This ensures we know when routing fails rather than silently degrading
 		if targetNode == nil || targetNode.ID.Equal(selfNode.ID) {
-			s.lgr.Error("Unable to determine responsible node for forwarding",
+			protocolName := "Unknown"
+			if isKoorde {
+				protocolName = "Koorde"
+			} else if isChord {
+				protocolName = "Chord"
+			}
+
+			s.lgr.Error("Routing failed: no valid target node found",
 				logger.F("url", url),
-				logger.F("hash", urlHash.ToHexString(true)))
-			http.Error(w, "no responsible node available", http.StatusServiceUnavailable)
+				logger.F("hash", urlHash.ToHexString(true)),
+				logger.F("protocol", protocolName),
+				logger.F("lookup_returned", responsible != nil),
+				logger.F("debruijn_count", len(s.node.DeBruijnList())),
+				logger.F("successor_count", len(s.node.SuccessorList())))
+
+			http.Error(w, fmt.Sprintf("%s routing failed: no responsible node available for key", protocolName), http.StatusServiceUnavailable)
 			return
 		}
 
@@ -223,20 +363,26 @@ func (s *HTTPCacheServer) handleCacheRequest(w http.ResponseWriter, r *http.Requ
 			logger.F("size_bytes", entry.Size),
 			logger.F("latency_ms", time.Since(start).Milliseconds()))
 
+		statusCode := entry.StatusCode
+		if statusCode < 100 {
+			statusCode = http.StatusOK
+		}
+
 		w.Header().Set("Content-Type", entry.ContentType)
 		w.Header().Set("X-Cache", "HIT-LOCAL")
 		w.Header().Set("X-Node-ID", s.node.Self().ID.ToHexString(true))
 		w.Header().Set("X-Latency-Ms", fmt.Sprintf("%.2f", time.Since(start).Seconds()*1000))
+		w.WriteHeader(statusCode)
 		w.Write(entry.Content)
 		return
 	}
 
 	// STEP 6: Hotspot detection (only for responsible node)
-	isHot := s.hotspot.RecordAccess(url)
+	isHot := s.hotspotDetector.RecordAccess(url)
 
 	if isHot {
 		// Hotspot detected - use random distribution strategy
-		avg, total, _ := s.hotspot.GetStats(url)
+		avg, total, _ := s.hotspotDetector.GetStats(url)
 		s.lgr.Info("Hotspot detected, using random distribution",
 			logger.F("url", url),
 			logger.F("avg_rate", fmt.Sprintf("%.2f", avg)),
@@ -254,7 +400,7 @@ func (s *HTTPCacheServer) handleCacheRequest(w http.ResponseWriter, r *http.Requ
 	s.lgr.Info("I am responsible, fetching from origin",
 		logger.F("url", url))
 
-	content, contentType, err := s.fetchFromOrigin(url)
+	content, contentType, statusCode, err := s.fetchFromOrigin(url)
 	if err != nil {
 		s.lgr.Error("Origin fetch failed",
 			logger.F("url", url),
@@ -264,7 +410,7 @@ func (s *HTTPCacheServer) handleCacheRequest(w http.ResponseWriter, r *http.Requ
 	}
 
 	// STEP 7: Cache the content locally
-	if err := s.cache.Put(url, content, contentType, 1*time.Hour); err != nil {
+	if err := s.cache.Put(url, content, contentType, originCacheTTL, statusCode); err != nil {
 		s.lgr.Warn("Failed to cache content",
 			logger.F("url", url),
 			logger.F("size", len(content)),
@@ -281,6 +427,7 @@ func (s *HTTPCacheServer) handleCacheRequest(w http.ResponseWriter, r *http.Requ
 	w.Header().Set("X-Cache", "MISS-ORIGIN")
 	w.Header().Set("X-Node-ID", s.node.Self().ID.ToHexString(true))
 	w.Header().Set("X-Latency-Ms", fmt.Sprintf("%.2f", time.Since(start).Seconds()*1000))
+	w.WriteHeader(statusCode)
 	w.Write(content)
 
 	s.lgr.Info("Request completed",
@@ -290,22 +437,37 @@ func (s *HTTPCacheServer) handleCacheRequest(w http.ResponseWriter, r *http.Requ
 }
 
 // pickRandomNode selects a random node from the cluster
-// Uses successor list + de Bruijn list as source of known nodes
+// Uses successor list + de Bruijn list (Koorde) or finger table (Chord) as source of known nodes
 func (s *HTTPCacheServer) pickRandomNode() string {
 	// Collect all known nodes
 	allNodes := make(map[string]bool)
 
-	// Add successors
+	// Add successors (both Chord and Koorde)
 	for _, succ := range s.node.SuccessorList() {
 		if succ != nil {
 			allNodes[succ.Addr] = true
 		}
 	}
 
-	// Add de Bruijn neighbors
-	for _, db := range s.node.DeBruijnList() {
+	// Add de Bruijn neighbors (Koorde only - returns nil for Chord)
+	deBruijnList := s.node.DeBruijnList()
+	for _, db := range deBruijnList {
 		if db != nil {
 			allNodes[db.Addr] = true
+		}
+	}
+
+	// For Chord: also use finger table entries
+	// Check if this is Chord (no de Bruijn list) and try to get finger table
+	if len(deBruijnList) == 0 {
+		// Likely Chord - try to get finger table if available
+		// Use type assertion to check if node has FingerList method
+		if chordNode, ok := s.node.(interface{ FingerList() []*domain.Node }); ok {
+			for _, finger := range chordNode.FingerList() {
+				if finger != nil {
+					allNodes[finger.Addr] = true
+				}
+			}
 		}
 	}
 
@@ -365,10 +527,8 @@ func (s *HTTPCacheServer) proxyToNode(
 		return
 	}
 
-	// Calculate HTTP port: HTTP port = gRPC port + 4080
-	// This matches the convention used in local-cluster configs:
-	// node0: 4000 -> 8080, node1: 4001 -> 8081, etc.
-	httpPort := grpcPort + 4080
+	// Calculate HTTP port using the configured offset (derived from this node)
+	httpPort := grpcPort + s.grpcToHTTPPortOffset
 
 	// Construct HTTP URL (using calculated HTTP port, not self's port)
 	proxyURL := fmt.Sprintf("http://%s:%d/cache?url=%s", host, httpPort, url)
@@ -418,8 +578,29 @@ func (s *HTTPCacheServer) proxyToNode(
 		return
 	}
 
+	// Determine content type once for headers and optional caching
+	contentType := resp.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	// Opportunistically cache successful proxy responses locally so future
+	// requests avoid another remote hop.
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		if err := s.cache.Put(url, content, contentType, nearCacheTTL, resp.StatusCode); err != nil {
+			s.lgr.Warn("Failed to cache proxied content",
+				logger.F("url", url),
+				logger.F("size", len(content)),
+				logger.F("err", err))
+		} else {
+			s.lgr.Debug("Cached proxied content locally",
+				logger.F("url", url),
+				logger.F("size_bytes", len(content)))
+		}
+	}
+
 	// Forward response to client
-	w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
+	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("X-Cache", cacheStatus)
 	w.Header().Set("X-Responsible-Node", nodeAddr)
 	w.Header().Set("X-Entry-Node", s.node.Self().Addr)
@@ -441,7 +622,7 @@ func (s *HTTPCacheServer) proxyToNode(
 }
 
 // fetchFromOrigin fetches content from the original URL
-func (s *HTTPCacheServer) fetchFromOrigin(url string) ([]byte, string, error) {
+func (s *HTTPCacheServer) fetchFromOrigin(url string) ([]byte, string, int, error) {
 	s.lgr.Debug("Fetching from origin", logger.F("url", url))
 
 	client := &http.Client{
@@ -457,17 +638,18 @@ func (s *HTTPCacheServer) fetchFromOrigin(url string) ([]byte, string, error) {
 
 	resp, err := client.Get(url)
 	if err != nil {
-		return nil, "", fmt.Errorf("origin request failed: %w", err)
+		return nil, "", 0, fmt.Errorf("origin request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, "", fmt.Errorf("origin returned status %d", resp.StatusCode)
+	statusCode := resp.StatusCode
+	if statusCode < 200 || statusCode >= 300 {
+		return nil, "", statusCode, fmt.Errorf("origin returned status %d", statusCode)
 	}
 
 	content, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to read origin response: %w", err)
+		return nil, "", statusCode, fmt.Errorf("failed to read origin response: %w", err)
 	}
 
 	contentType := resp.Header.Get("Content-Type")
@@ -478,20 +660,22 @@ func (s *HTTPCacheServer) fetchFromOrigin(url string) ([]byte, string, error) {
 	s.lgr.Info("Origin fetch successful",
 		logger.F("url", url),
 		logger.F("size_bytes", len(content)),
-		logger.F("content_type", contentType))
+		logger.F("content_type", contentType),
+		logger.F("status_code", statusCode))
 
-	return content, contentType, nil
+	return content, contentType, statusCode, nil
 }
 
 // handleMetrics returns cache and hotspot statistics as JSON
 func (s *HTTPCacheServer) handleMetrics(w http.ResponseWriter, r *http.Request) {
 	cacheMetrics := s.cache.GetMetrics()
-	hotURLs := s.hotspot.GetHotURLs()
+	hotURLs := s.hotspotDetector.GetHotURLs()
 
 	// Routing table info
 	succCount := len(s.node.SuccessorList())
 	deBruijnCount := len(s.node.DeBruijnList())
 	hasPred := s.node.Predecessor() != nil
+	routingStats := s.node.RoutingMetrics()
 
 	response := map[string]interface{}{
 		"node": map[string]interface{}{
@@ -517,6 +701,15 @@ func (s *HTTPCacheServer) handleMetrics(w http.ResponseWriter, r *http.Request) 
 			"successor_count": succCount,
 			"debruijn_count":  deBruijnCount,
 			"has_predecessor": hasPred,
+			"stats": map[string]interface{}{
+				"protocol":                  routingStats.Protocol,
+				"de_bruijn_success":         routingStats.DeBruijnSuccessCount,
+				"de_bruijn_failures":        routingStats.DeBruijnFailureCount,
+				"successor_fallbacks":       routingStats.SuccessorFallbackCount,
+				"avg_de_bruijn_success_ms":  routingStats.AvgDeBruijnSuccessLatencyMs,
+				"avg_de_bruijn_failure_ms":  routingStats.AvgDeBruijnFailureLatencyMs,
+				"avg_successor_fallback_ms": routingStats.AvgSuccessorFallbackLatency,
+			},
 		},
 	}
 
@@ -529,17 +722,50 @@ func (s *HTTPCacheServer) handleHealth(w http.ResponseWriter, r *http.Request) {
 	// Check if node is properly initialized
 	healthy := true
 	status := "READY"
-
-	succList := s.node.SuccessorList()
-	if len(succList) == 0 || succList[0] == nil {
+	self := s.node.Self()
+	nodeID := ""
+	if self == nil {
 		healthy = false
 		status = "NOT_INITIALIZED"
+	} else {
+		nodeID = self.ID.ToHexString(true)
+	}
+
+	succList := s.node.SuccessorList()
+	successorReady := len(succList) > 0
+	if !successorReady {
+		healthy = false
+		if status == "READY" {
+			status = "NOT_INITIALIZED"
+		}
+	}
+
+	routingStats := s.node.RoutingMetrics()
+	deBruijnList := s.node.DeBruijnList()
+	requiredDeBruijn := s.node.Space().GraphGrade
+	deBruijnCount := len(deBruijnList)
+	deBruijnReady := true
+	if routingStats.Protocol == "koorde" {
+		// Require at least 1 de Bruijn neighbor for readiness (full degree may exceed cluster size)
+		deBruijnReady = deBruijnCount >= 1
+		if !deBruijnReady {
+			healthy = false
+			status = "DEBRUIJN_NOT_READY"
+		}
 	}
 
 	response := map[string]interface{}{
 		"healthy": healthy,
 		"status":  status,
-		"node_id": s.node.Self().ID.ToHexString(true),
+		"node_id": nodeID,
+		"details": map[string]interface{}{
+			"protocol":           routingStats.Protocol,
+			"successor_ready":    successorReady,
+			"successor_count":    len(succList),
+			"de_bruijn_ready":    deBruijnReady,
+			"de_bruijn_count":    deBruijnCount,
+			"required_de_bruijn": requiredDeBruijn,
+		},
 	}
 
 	w.Header().Set("Content-Type", "application/json")

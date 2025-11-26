@@ -34,7 +34,7 @@ cache:
   httpPort: 8084
   capacityMB: 512
   defaultTTL: 3600
-  hotspotThreshold: 100.0
+  hotspotThreshold: 10.0
   hotspotDecayRate: 0.65
 
 telemetry:

@@ -1,0 +1,37 @@
+logger:
+  active: true
+  level: info
+  encoding: console
+
+dht:
+  idBits: 16
+  protocol: chord
+  mode: private
+  bootstrap:
+    mode: static
+    peers: ["127.0.0.1:4000"]
+  deBruijn:
+    degree: 2
+    fixInterval: 5s
+  faultTolerance:
+    successorListSize: 3
+    stabilizationInterval: 2s
+    failureTimeout: 1s
+  storage:
+    fixInterval: 10s
+
+node:
+  id: ""
+  bind: "0.0.0.0"
+  host: "127.0.0.1"
+  port: 4001
+
+cache:
+  capacityMB: 100
+  httpPort: 8081
+  hotspotThreshold: 10.0
+  hotspotDecayRate: 0.9
+
+telemetry:
+  tracing:
+    enabled: false

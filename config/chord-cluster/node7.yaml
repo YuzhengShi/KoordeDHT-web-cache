@@ -1,0 +1,43 @@
+﻿logger:
+  active: true
+  level: info
+  encoding: console
+  mode: stdout
+
+node:
+  bind: "0.0.0.0"
+  host: "localhost"
+  port: 4007
+
+dht:
+  idBits: 66
+  protocol: chord
+  mode: private
+  
+  bootstrap:
+    mode: static
+    peers: ["localhost:4000"]
+  
+  deBruijn:
+    degree: 2
+    fixInterval: 5s
+  
+  faultTolerance:
+    successorListSize: 8
+    stabilizationInterval: 2s
+    failureTimeout: 1s
+
+  storage:
+    fixInterval: 20s
+
+cache:
+  enabled: true
+  httpPort: 8087
+  capacityMB: 256
+  defaultTTL: 3600
+  hotspotThreshold: 10.0
+  hotspotDecayRate: 0.65
+
+telemetry:
+  tracing:
+    enabled: false

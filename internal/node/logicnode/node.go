@@ -13,18 +13,20 @@ import (
 )
 
 type Node struct {
-	lgr logger.Logger
-	rt  *routingtable.RoutingTable
-	s   *storage.Storage
-	cp  *client2.Pool
+	lgr   logger.Logger
+	rt    *routingtable.RoutingTable
+	s     *storage.Storage
+	cp    *client2.Pool
+	stats *routingStats
 }
 
 func New(rout *routingtable.RoutingTable, clientpool *client2.Pool, storage *storage.Storage, opts ...Option) *Node {
 	n := &Node{
-		lgr: &logger.NopLogger{},
-		rt:  rout,
-		cp:  clientpool,
-		s:   storage,
+		lgr:   &logger.NopLogger{},
+		rt:    rout,
+		cp:    clientpool,
+		s:     storage,
+		stats: newRoutingStats(),
 	}
 	// Apply options
 	for _, opt := range opts {
@@ -131,6 +133,7 @@ func (n *Node) Join(peers []string) error {
 
 	// Initialize de Bruijn pointers
 	n.fixDeBruijn()
+	n.seedDeBruijnWindow(succ)
 
 	n.lgr.Info("join: completed successfully",
 		logger.FNode("self", self),

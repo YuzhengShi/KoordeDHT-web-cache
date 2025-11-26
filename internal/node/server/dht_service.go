@@ -4,7 +4,7 @@ import (
 	dhtv1 "KoordeDHT/internal/api/dht/v1"
 	"KoordeDHT/internal/domain"
 	"KoordeDHT/internal/node/ctxutil"
-	"KoordeDHT/internal/node/logicnode"
+	"KoordeDHT/internal/node/dht"
 	"KoordeDHT/internal/node/telemetry"
 	"context"
 	"errors"
@@ -23,7 +23,7 @@ import (
 // with each other for lookups, stabilization, and resource management.
 type dhtService struct {
 	dhtv1.UnimplementedDHTServer
-	node *logicnode.Node
+	node dht.DHTNode
 }
 
 // NewDHTService constructs a new DHT gRPC service bound to the given node.
@@ -35,7 +35,7 @@ type dhtService struct {
 //   - A dhtv1.DHTServer implementation suitable for gRPC registration
 //
 // Panics if the provided node is nil.
-func NewDHTService(n *logicnode.Node) dhtv1.DHTServer {
+func NewDHTService(n dht.DHTNode) dhtv1.DHTServer {
 	if n == nil {
 		panic(errors.New("NewDHTService: node must not be nil"))
 	}
@@ -87,45 +87,8 @@ func (s *dhtService) FindSuccessor(ctx context.Context, req *dhtv1.FindSuccessor
 		}
 	}
 
-	// validate target ID
-	if err := s.node.IsValidID(req.TargetId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid target_id")
-	}
-	target := domain.ID(req.TargetId)
-
-	// Dispatch to the appropriate node method
-	var (
-		succ *domain.Node
-		err  error
-	)
-	switch mode := req.Mode.(type) {
-	case *dhtv1.FindSuccessorRequest_Initial:
-		// Call FindSuccessorInit for initial lookups
-		succ, err = s.node.FindSuccessorInit(ctx, target)
-	case *dhtv1.FindSuccessorRequest_Step:
-		if err := s.node.IsValidID(mode.Step.CurrentI); err != nil {
-			return nil, status.Error(codes.InvalidArgument, "invalid current_i")
-		}
-		if err := s.node.IsValidID(mode.Step.KShift); err != nil {
-			return nil, status.Error(codes.InvalidArgument, "invalid kshift")
-		}
-		currentI := domain.ID(mode.Step.CurrentI)
-		kshift := domain.ID(mode.Step.KShift)
-		// Call FindSuccessorStep with extracted parameters
-		succ, err = s.node.FindSuccessorStep(ctx, target, currentI, kshift)
-	default:
-		return nil, status.Error(codes.InvalidArgument, "invalid mode")
-	}
-
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "FindSuccessor failed: %v", err)
-	}
-
-	if succ == nil {
-		return nil, status.Error(codes.NotFound, "successor not found")
-	}
-
-	return &dhtv1.FindSuccessorResponse{Node: succ.ToProtoDHT()}, nil
+	// Delegate to the node implementation
+	return s.node.HandleFindSuccessor(ctx, req)
 }
 
 // GetPredecessor handles a request to retrieve the current predecessor of this node.
