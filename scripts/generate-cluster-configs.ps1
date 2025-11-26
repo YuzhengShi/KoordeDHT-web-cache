@@ -4,13 +4,34 @@
 param(
     [int]$Nodes = 8,
     [int]$Degree = 3,
-    [string]$OutputDir = "config/test-cluster"
+    [string]$OutputDir = "config/test-cluster",
+    [int]$FailureTimeoutMs = 0,  # 0 = auto-calculate based on degree
+    [int]$SimulatedLatencyMs = 0  # 0 = no simulated latency (real network)
 )
 
 Write-Host "=== Generating Koorde Cluster Config ===" -ForegroundColor Green
 Write-Host "Nodes:  $Nodes"
 Write-Host "Degree: $Degree"
 Write-Host "Output: $OutputDir"
+
+# Calculate optimal failureTimeout based on degree
+# Higher degree = more de Bruijn neighbors = more potential paths = need more time
+# Base: 1000ms + (degree / 4) * 500ms, capped at 5s
+if ($FailureTimeoutMs -eq 0) {
+    $FailureTimeoutMs = 1000 + [Math]::Floor($Degree / 4) * 500
+    $FailureTimeoutMs = [Math]::Min($FailureTimeoutMs, 5000)
+}
+$failureTimeoutStr = "$($FailureTimeoutMs)ms"
+Write-Host "Failure Timeout: $failureTimeoutStr (degree-aware)"
+
+# Simulated latency configuration
+if ($SimulatedLatencyMs -gt 0) {
+    $simulatedLatencyStr = "$($SimulatedLatencyMs)ms"
+    Write-Host "Simulated Latency: $simulatedLatencyStr per hop" -ForegroundColor Yellow
+} else {
+    $simulatedLatencyStr = "0ms"
+    Write-Host "Simulated Latency: disabled (real network)"
+}
 Write-Host ""
 
 # Create output directory
@@ -67,7 +88,8 @@ dht:
   faultTolerance:
     successorListSize: $([Math]::Min($Nodes, 8))
     stabilizationInterval: 2s
-    failureTimeout: 1s
+    failureTimeout: $failureTimeoutStr
+    simulatedLatency: $simulatedLatencyStr
 
 cache:
   enabled: true

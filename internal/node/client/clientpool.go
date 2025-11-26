@@ -49,7 +49,7 @@ type Pool struct {
 }
 
 // New creates a new empty Pool. It accepts a list of functional options
-// to configure the pool (logger).
+// to configure the pool (logger, simulated latency).
 func New(selfId domain.ID, selfAddr string, failTO time.Duration, opt ...Option) *Pool {
 	p := &Pool{
 		selfId:         selfId,

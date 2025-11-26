@@ -3,12 +3,22 @@
 
 param(
     [int]$Nodes = 8,
-    [string]$OutputDir = "config/chord-cluster"
+    [string]$OutputDir = "config/chord-cluster",
+    [int]$SimulatedLatencyMs = 0  # 0 = no simulated latency (real network)
 )
 
 Write-Host "=== Generating Chord Cluster Config ===" -ForegroundColor Green
 Write-Host "Nodes:  $Nodes"
 Write-Host "Output: $OutputDir"
+
+# Simulated latency configuration
+if ($SimulatedLatencyMs -gt 0) {
+    $simulatedLatencyStr = "$($SimulatedLatencyMs)ms"
+    Write-Host "Simulated Latency: $simulatedLatencyStr per hop" -ForegroundColor Yellow
+} else {
+    $simulatedLatencyStr = "0ms"
+    Write-Host "Simulated Latency: disabled (real network)"
+}
 Write-Host ""
 
 # Create output directory
@@ -58,6 +68,7 @@ dht:
     successorListSize: $([Math]::Min($Nodes, 8))
     stabilizationInterval: 2s
     failureTimeout: 1s
+    simulatedLatency: $simulatedLatencyStr
 
   storage:
     fixInterval: 20s

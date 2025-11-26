@@ -107,11 +107,12 @@ func main() {
 	defer shutdown(context.Background())
 
 	// Initialize client pool
+	cpOpts := []client2.Option{client2.WithLogger(lgr.Named("clientpool"))}
 	cp := client2.New(
 		id,
 		addr,
 		cfg.DHT.FaultTolerance.FailureTimeout,
-		client2.WithLogger(lgr.Named("clientpool")),
+		cpOpts...,
 	)
 	lgr.Debug("initialized client pool")
 

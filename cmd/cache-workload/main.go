@@ -87,7 +87,6 @@ func main() {
 		"/status/200", "/status/201", "/status/202", "/status/204",
 		"/bytes/1024", "/bytes/2048", "/bytes/4096",
 		"/base64/SFRUUEJJTiBpcyBhd2Vzb21l", "/base64/VGVzdCBtZXNzYWdl",
-		"/delay/1", "/delay/2",
 	}
 
 	for i := 0; i < *numURLs; i++ {

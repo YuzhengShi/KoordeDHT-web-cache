@@ -12,7 +12,8 @@ param(
     [switch]$SkipBuild = $false,
     [int[]]$NodeCounts = @(),
     [int[]]$Degrees = @(),
-    [string[]]$Protocols = @("chord", "koorde")
+    [string[]]$Protocols = @("chord", "koorde"),
+    [int]$SimulatedLatencyMs = 0  # 0 = no latency, >0 = inject N ms per hop
 )
 
 $ErrorActionPreference = "Stop"
@@ -227,9 +228,9 @@ function Run-SingleTest {
     Stop-AllNodes
     
     if ($Protocol -eq "chord") {
-        & ./scripts/generate-chord-configs.ps1 -Nodes $Nodes -OutputDir $configDir 2>&1 | Out-Null
+        & ./scripts/generate-chord-configs.ps1 -Nodes $Nodes -OutputDir $configDir -SimulatedLatencyMs $script:SimulatedLatencyMs 2>&1 | Out-Null
     } else {
-        & ./scripts/generate-cluster-configs.ps1 -Nodes $Nodes -Degree $Degree -OutputDir $configDir 2>&1 | Out-Null
+        & ./scripts/generate-cluster-configs.ps1 -Nodes $Nodes -Degree $Degree -OutputDir $configDir -SimulatedLatencyMs $script:SimulatedLatencyMs 2>&1 | Out-Null
     }
     
     # Dynamic stabilization based on cluster size
@@ -313,6 +314,11 @@ Write-Host "  Protocols:    $($Protocols -join ', ')"
 Write-Host "  Requests:     $Requests per test"
 Write-Host "  Warmup:       $WarmupRequests requests"
 Write-Host "  Rate:         $Rate req/s"
+if ($SimulatedLatencyMs -gt 0) {
+    Write-Host "  Sim Latency:  ${SimulatedLatencyMs}ms per hop" -ForegroundColor Yellow
+} else {
+    Write-Host "  Sim Latency:  disabled (real network)"
+}
 Write-Host ""
 
 $runChord = $Protocols -contains "chord"
@@ -414,7 +420,28 @@ Write-Host "==============================================================" -For
 Write-Host ""
 
 $csvFile = "$OutputDir/benchmark-results-$timestamp.csv"
-$allResults | Export-Csv -Path $csvFile -NoTypeInformation
+# Convert hashtables to PSCustomObjects for proper CSV export
+$csvResults = $allResults | ForEach-Object {
+    [PSCustomObject]@{
+        Protocol = $_.Protocol
+        Nodes = $_.Nodes
+        Degree = $_.Degree
+        AvgLatency = $_.AvgLatency
+        MinLatency = $_.MinLatency
+        MaxLatency = $_.MaxLatency
+        P50 = $_.P50
+        P75 = $_.P75
+        P90 = $_.P90
+        P95 = $_.P95
+        P99 = $_.P99
+        SuccessRate = $_.SuccessRate
+        DeBruijnUsage = $_.DeBruijnUsage
+        DeBruijnSuccess = $_.DeBruijnSuccess
+        SuccessorFallback = $_.SuccessorFallback
+        AvgDBEntries = $_.AvgDBEntries
+    }
+}
+$csvResults | Export-Csv -Path $csvFile -NoTypeInformation
 Write-Host "Raw CSV: $csvFile" -ForegroundColor Gray
 
 $reportFile = "$OutputDir/benchmark-report-$timestamp.md"

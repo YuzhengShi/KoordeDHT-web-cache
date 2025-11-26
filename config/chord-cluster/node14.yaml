@@ -26,6 +26,7 @@ dht:
     successorListSize: 8
     stabilizationInterval: 2s
     failureTimeout: 1s
+    simulatedLatency: 0ms
 
   storage:
     fixInterval: 20s

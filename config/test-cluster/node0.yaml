@@ -18,7 +18,7 @@ dht:
     peers: []
   
   deBruijn:
-    degree: 8
+    degree: 4
     fixInterval: 3s
   
   storage:
@@ -27,7 +27,8 @@ dht:
   faultTolerance:
     successorListSize: 8
     stabilizationInterval: 2s
-    failureTimeout: 1s
+    failureTimeout: 1500ms
+    simulatedLatency: 0ms
 
 cache:
   enabled: true

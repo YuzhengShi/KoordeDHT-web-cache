@@ -202,7 +202,6 @@ func (n *Node) LookUp(ctx context.Context, id domain.ID) (*domain.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	// Use FindSuccessor RPC
 	// We can use Initial mode for simplicity, as Chord doesn't need Step state
 	return client2.FindSuccessorStart(ctx, cli, n.Space(), id)
