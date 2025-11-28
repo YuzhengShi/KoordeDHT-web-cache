@@ -1,3 +1,0 @@
-2025/11/25 12:00:10 invalid configuration: configuration errors:
-  - dht.deBruijn.degree must be <= dht.faultTolerance.successorListSize
-  - dht.idBits (66) must be a multiple of log2(dht.deBruijn.degree) = 4

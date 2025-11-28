@@ -1,3 +1,0 @@
-"Protocol","Nodes","Degree","AvgLatency","MinLatency","MaxLatency","P50","P75","P90","P95","P99","SuccessRate","DeBruijnUsage","DeBruijnSuccess","SuccessorFallback","AvgDBEntries"
-"chord","32","0","8.26","0.67","410.25","2.81","3.35","5.06","24.05","143.72","90","0","0","0","0"
-"koorde","32","8","146.43","2.13","4065.42","47.45","77.28","138.41","447.56","3067.89","84.67","19.6","5580","22953","8"
