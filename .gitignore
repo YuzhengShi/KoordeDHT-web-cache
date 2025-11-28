@@ -34,3 +34,14 @@ Thumbs.db
 *.temp
 *.bak
 
+benchmark/*
+config/chord-cluster/*
+config/test-cluster/*
+logs/
+bin/
+__pycache__/
+*.log
+*.err
+results*.csv
+pids.txt
+*-log.txt
