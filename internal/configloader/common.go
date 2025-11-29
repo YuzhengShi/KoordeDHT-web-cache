@@ -21,6 +21,7 @@ type Route53Config struct {
 	DomainSuffix string `yaml:"domainSuffix"`
 	TTL          int64  `yaml:"ttl"`
 	Region       string `yaml:"region"`
+	Endpoint     string `yaml:"endpoint"`
 }
 
 type BootstrapConfig struct {

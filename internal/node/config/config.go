@@ -102,6 +102,7 @@ func LoadConfig(path string) (*Config, error) {
 	configloader.OverrideString(&cfg.DHT.Bootstrap.Route53.DomainSuffix, "ROUTE53_SUFFIX")
 	configloader.OverrideInt64(&cfg.DHT.Bootstrap.Route53.TTL, "ROUTE53_TTL")
 	configloader.OverrideString(&cfg.DHT.Bootstrap.Route53.Region, "ROUTE53_REGION")
+	configloader.OverrideString(&cfg.DHT.Bootstrap.Route53.Endpoint, "ROUTE53_ENDPOINT")
 
 	configloader.OverrideBool(&cfg.Telemetry.Tracing.Enabled, "TRACING_ENABLED")
 	configloader.OverrideString(&cfg.Telemetry.Tracing.Exporter, "TRACING_EXPORTER")
@@ -340,6 +341,7 @@ func (cfg *Config) LogConfig(lgr logger.Logger) {
 		logger.F("dht.bootstrap.register.domainSuffix", cfg.DHT.Bootstrap.Route53.DomainSuffix),
 		logger.F("dht.bootstrap.register.ttl", cfg.DHT.Bootstrap.Route53.TTL),
 		logger.F("dht.bootstrap.register.region", cfg.DHT.Bootstrap.Route53.Region),
+		logger.F("dht.bootstrap.register.endpoint", cfg.DHT.Bootstrap.Route53.Endpoint),
 
 		// Node
 		logger.F("node.id", cfg.Node.Id),
