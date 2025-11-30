@@ -224,6 +224,9 @@ func (s *HTTPCacheServer) handleCacheRequest(w http.ResponseWriter, r *http.Requ
 
 			w.Header().Set("Content-Type", entry.ContentType)
 			w.Header().Set("X-Cache", "HIT-NEAR")
+			// Entry node is not the responsible node, but we still expose our ID
+			// so clients can see which node served the request.
+			w.Header().Set("X-Node-ID", s.node.Self().ID.ToHexString(true))
 			w.Header().Set("X-Entry-Node", s.node.Self().Addr)
 			w.Header().Set("X-Latency-Ms", fmt.Sprintf("%.2f", time.Since(start).Seconds()*1000))
 			w.WriteHeader(statusCode)
@@ -604,6 +607,14 @@ func (s *HTTPCacheServer) proxyToNode(
 	w.Header().Set("X-Cache", cacheStatus)
 	w.Header().Set("X-Responsible-Node", nodeAddr)
 	w.Header().Set("X-Entry-Node", s.node.Self().Addr)
+
+	// Preserve the responsible node's ID for clients and tests.
+	// The target node's HTTP handler sets X-Node-ID when it is responsible;
+	// propagate that header so external clients (or load balancers) can see it.
+	if nodeID := resp.Header.Get("X-Node-ID"); nodeID != "" {
+		w.Header().Set("X-Node-ID", nodeID)
+	}
+
 	w.Header().Set("X-Latency-Ms", fmt.Sprintf("%.2f", time.Since(start).Seconds()*1000))
 
 	// Copy additional headers from proxy response

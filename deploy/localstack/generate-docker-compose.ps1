@@ -7,6 +7,8 @@ param(
 
 $ComposeFile = "docker-compose.yml"
 $NginxFile = "nginx.conf"
+# Path to routing test config (relative to repo root)
+$VerifyConfigPath = "..\..\test\verify_routing_config.json"
 
 Write-Host "Generating configuration for $Nodes nodes (Degree: $Degree)..." -ForegroundColor Cyan
 
@@ -117,9 +119,20 @@ for ($i = 0; $i -lt $Nodes; $i++) {
     $nodePort = $BasePort + $i
     $httpPort = $BaseHttpPort + $i
     
-    # Generate 16-character hex ID (64-bit)
-    # Format: 0000000000000000, 0000000000000001, etc.
-    $hexId = "{0:x16}" -f $i
+    # Generate node ID by hashing the node name (for proper distribution)
+    # This matches the behavior expected by the DHT
+    $nodeName = "koorde-node-$i"
+    $sha1 = [System.Security.Cryptography.SHA1]::Create()
+    $hashBytes = $sha1.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($nodeName))
+    
+    # Take first 9 bytes (66 bits) and mask unused bits
+    $idBytes = $hashBytes[0..8]
+    # Mask the top 6 bits of first byte (66 bits = 8*9 - 6)
+    # extraBits = 72 - 66 = 6, so mask = 0xFF >> 6 = 0x03
+    $idBytes[0] = $idBytes[0] -band 0x03
+    
+    # Convert to hex string
+    $hexId = ($idBytes | ForEach-Object { $_.ToString("x2") }) -join ""
     
     $block = $serviceTemplate.Replace("__ID__", "$i")
     $block = $block.Replace("__HEX_ID__", $hexId)
@@ -132,4 +145,23 @@ for ($i = 0; $i -lt $Nodes; $i++) {
 
 Set-Content -Path $ComposeFile -Value $composeContent
 Write-Host "Created $ComposeFile" -ForegroundColor Green
+
+# -----------------------------------------------------------------------------
+# 3. Generate verify_routing configuration (for test/verify_routing.py)
+# -----------------------------------------------------------------------------
+
+$verifyConfig = @{
+    NUM_NODES = $Nodes
+    ID_BITS   = 66
+}
+
+try {
+    $verifyJson = $verifyConfig | ConvertTo-Json -Depth 2
+    Set-Content -Path $VerifyConfigPath -Value $verifyJson
+    Write-Host "Created $VerifyConfigPath" -ForegroundColor Green
+} catch {
+    # Use ${} to avoid PowerShell parsing the ':' as part of the variable name
+    Write-Warning "Failed to write verify_routing config to ${VerifyConfigPath}: $_"
+}
+
 Write-Host "Ready to deploy $Nodes nodes!" -ForegroundColor Green

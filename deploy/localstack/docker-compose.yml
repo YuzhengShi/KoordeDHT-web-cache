@@ -59,7 +59,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000000
+      - NODE_ID=01bb881d8b5581f92d
       - NODE_HOST=koorde-node-0
       - NODE_PORT=4000
       - NODE_BIND=0.0.0.0
@@ -83,7 +83,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000001
+      - NODE_ID=01ecb5df7a1ef4be16
       - NODE_HOST=koorde-node-1
       - NODE_PORT=4001
       - NODE_BIND=0.0.0.0
@@ -107,7 +107,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000002
+      - NODE_ID=030ef2ddc9b1bbf0c6
       - NODE_HOST=koorde-node-2
       - NODE_PORT=4002
       - NODE_BIND=0.0.0.0
@@ -131,7 +131,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000003
+      - NODE_ID=031ecbc24f8e7b3a97
       - NODE_HOST=koorde-node-3
       - NODE_PORT=4003
       - NODE_BIND=0.0.0.0
@@ -155,7 +155,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000004
+      - NODE_ID=0123ddd1a5157c34d7
       - NODE_HOST=koorde-node-4
       - NODE_PORT=4004
       - NODE_BIND=0.0.0.0
@@ -179,7 +179,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000005
+      - NODE_ID=01d38771e5e8431002
       - NODE_HOST=koorde-node-5
       - NODE_PORT=4005
       - NODE_BIND=0.0.0.0
@@ -203,7 +203,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000006
+      - NODE_ID=01922c0146acb35038
       - NODE_HOST=koorde-node-6
       - NODE_PORT=4006
       - NODE_BIND=0.0.0.0
@@ -227,7 +227,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000007
+      - NODE_ID=021a0ed4b343ea5077
       - NODE_HOST=koorde-node-7
       - NODE_PORT=4007
       - NODE_BIND=0.0.0.0
@@ -251,7 +251,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000008
+      - NODE_ID=013cee6b420d3ef1c9
       - NODE_HOST=koorde-node-8
       - NODE_PORT=4008
       - NODE_BIND=0.0.0.0
@@ -275,7 +275,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000009
+      - NODE_ID=0254e041ed1edf526c
       - NODE_HOST=koorde-node-9
       - NODE_PORT=4009
       - NODE_BIND=0.0.0.0
@@ -299,7 +299,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=000000000000000a
+      - NODE_ID=00571c13fe5f2cc580
       - NODE_HOST=koorde-node-10
       - NODE_PORT=4010
       - NODE_BIND=0.0.0.0
@@ -323,7 +323,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=000000000000000b
+      - NODE_ID=0164de18787651e8d5
       - NODE_HOST=koorde-node-11
       - NODE_PORT=4011
       - NODE_BIND=0.0.0.0
@@ -347,7 +347,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=000000000000000c
+      - NODE_ID=013c77b9e4d70c004f
       - NODE_HOST=koorde-node-12
       - NODE_PORT=4012
       - NODE_BIND=0.0.0.0
@@ -371,7 +371,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=000000000000000d
+      - NODE_ID=0123d96a5a50b6d748
       - NODE_HOST=koorde-node-13
       - NODE_PORT=4013
       - NODE_BIND=0.0.0.0
@@ -395,7 +395,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=000000000000000e
+      - NODE_ID=03c5f09767bb97d4e2
       - NODE_HOST=koorde-node-14
       - NODE_PORT=4014
       - NODE_BIND=0.0.0.0
@@ -419,7 +419,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=000000000000000f
+      - NODE_ID=0317fafcf912ac5dde
       - NODE_HOST=koorde-node-15
       - NODE_PORT=4015
       - NODE_BIND=0.0.0.0
@@ -443,7 +443,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000010
+      - NODE_ID=0344075d4ceb904d2a
       - NODE_HOST=koorde-node-16
       - NODE_PORT=4016
       - NODE_BIND=0.0.0.0
@@ -467,7 +467,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000011
+      - NODE_ID=03d2f36c0f2b441c50
       - NODE_HOST=koorde-node-17
       - NODE_PORT=4017
       - NODE_BIND=0.0.0.0
@@ -491,7 +491,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000012
+      - NODE_ID=01b8d6d24f0f228c62
       - NODE_HOST=koorde-node-18
       - NODE_PORT=4018
       - NODE_BIND=0.0.0.0
@@ -515,7 +515,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000013
+      - NODE_ID=005523a423f7cd968b
       - NODE_HOST=koorde-node-19
       - NODE_PORT=4019
       - NODE_BIND=0.0.0.0
@@ -539,7 +539,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000014
+      - NODE_ID=00c7b726d17e51646b
       - NODE_HOST=koorde-node-20
       - NODE_PORT=4020
       - NODE_BIND=0.0.0.0
@@ -563,7 +563,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000015
+      - NODE_ID=02788c0a4780537dec
       - NODE_HOST=koorde-node-21
       - NODE_PORT=4021
       - NODE_BIND=0.0.0.0
@@ -587,7 +587,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000016
+      - NODE_ID=02d4495ce64f3d9e6f
       - NODE_HOST=koorde-node-22
       - NODE_PORT=4022
       - NODE_BIND=0.0.0.0
@@ -611,7 +611,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000017
+      - NODE_ID=0337475d130eb044f5
       - NODE_HOST=koorde-node-23
       - NODE_PORT=4023
       - NODE_BIND=0.0.0.0
@@ -635,7 +635,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000018
+      - NODE_ID=039aca3410c7bcc7d2
       - NODE_HOST=koorde-node-24
       - NODE_PORT=4024
       - NODE_BIND=0.0.0.0
@@ -659,7 +659,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=0000000000000019
+      - NODE_ID=02049b1596b4e38dfe
       - NODE_HOST=koorde-node-25
       - NODE_PORT=4025
       - NODE_BIND=0.0.0.0
@@ -683,7 +683,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=000000000000001a
+      - NODE_ID=0358ad00e5a996e175
       - NODE_HOST=koorde-node-26
       - NODE_PORT=4026
       - NODE_BIND=0.0.0.0
@@ -707,7 +707,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=000000000000001b
+      - NODE_ID=0130f4d5a5dfa8eaab
       - NODE_HOST=koorde-node-27
       - NODE_PORT=4027
       - NODE_BIND=0.0.0.0
@@ -731,7 +731,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=000000000000001c
+      - NODE_ID=02451c6fc0503fd13e
       - NODE_HOST=koorde-node-28
       - NODE_PORT=4028
       - NODE_BIND=0.0.0.0
@@ -755,7 +755,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=000000000000001d
+      - NODE_ID=00c419c9c91ba1ecce
       - NODE_HOST=koorde-node-29
       - NODE_PORT=4029
       - NODE_BIND=0.0.0.0
@@ -779,7 +779,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=000000000000001e
+      - NODE_ID=00ccba4d1b770314a1
       - NODE_HOST=koorde-node-30
       - NODE_PORT=4030
       - NODE_BIND=0.0.0.0
@@ -803,7 +803,7 @@ services:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - NODE_ID=000000000000001f
+      - NODE_ID=026570e32816bb9e31
       - NODE_HOST=koorde-node-31
       - NODE_PORT=4031
       - NODE_BIND=0.0.0.0

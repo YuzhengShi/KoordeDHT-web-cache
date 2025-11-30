@@ -1,6 +1,0 @@
-Method,Name,Error,Occurrences
-GET,/cache [Random],CatchResponseError('Got status code 201'),105
-GET,/cache [Zipf],CatchResponseError('Got status code 502'),2
-GET,/cache [Zipf],CatchResponseError('Got status code 202'),763
-GET,/cache [Random],CatchResponseError('Got status code 202'),131
-GET,/cache [Zipf],CatchResponseError('Got status code 201'),788
