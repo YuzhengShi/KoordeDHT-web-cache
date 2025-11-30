@@ -37,6 +37,22 @@ services:
       - koorde-node-13
       - koorde-node-14
       - koorde-node-15
+      - koorde-node-16
+      - koorde-node-17
+      - koorde-node-18
+      - koorde-node-19
+      - koorde-node-20
+      - koorde-node-21
+      - koorde-node-22
+      - koorde-node-23
+      - koorde-node-24
+      - koorde-node-25
+      - koorde-node-26
+      - koorde-node-27
+      - koorde-node-28
+      - koorde-node-29
+      - koorde-node-30
+      - koorde-node-31
 
   koorde-node-0:
     build:
@@ -49,7 +65,7 @@ services:
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8080
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -73,7 +89,7 @@ services:
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8081
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -97,7 +113,7 @@ services:
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8082
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -121,7 +137,7 @@ services:
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8083
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -145,7 +161,7 @@ services:
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8084
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -169,7 +185,7 @@ services:
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8085
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -193,7 +209,7 @@ services:
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8086
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -217,7 +233,7 @@ services:
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8087
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -241,7 +257,7 @@ services:
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8088
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -265,7 +281,7 @@ services:
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8089
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -289,7 +305,7 @@ services:
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8090
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -313,7 +329,7 @@ services:
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8091
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -337,7 +353,7 @@ services:
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8092
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -361,7 +377,7 @@ services:
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8093
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -385,7 +401,7 @@ services:
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8094
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -409,7 +425,7 @@ services:
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8095
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -420,5 +436,389 @@ services:
     ports:
       - "4015:4015"
       - "8095:8095"
+    depends_on:
+      - localstack
+  koorde-node-16:
+    build:
+      context: ../../
+      dockerfile: docker/node.Dockerfile
+    environment:
+      - NODE_ID=0000000000000010
+      - NODE_HOST=koorde-node-16
+      - NODE_PORT=4016
+      - NODE_BIND=0.0.0.0
+      - CACHE_HTTP_PORT=8096
+      - BOOTSTRAP_MODE=route53
+      - DEBRUIJN_DEGREE=2
+      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
+      - ROUTE53_SUFFIX=dht.local
+      - ROUTE53_REGION=us-east-1
+      - ROUTE53_ENDPOINT=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_REGION=us-east-1
+    ports:
+      - "4016:4016"
+      - "8096:8096"
+    depends_on:
+      - localstack
+  koorde-node-17:
+    build:
+      context: ../../
+      dockerfile: docker/node.Dockerfile
+    environment:
+      - NODE_ID=0000000000000011
+      - NODE_HOST=koorde-node-17
+      - NODE_PORT=4017
+      - NODE_BIND=0.0.0.0
+      - CACHE_HTTP_PORT=8097
+      - BOOTSTRAP_MODE=route53
+      - DEBRUIJN_DEGREE=2
+      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
+      - ROUTE53_SUFFIX=dht.local
+      - ROUTE53_REGION=us-east-1
+      - ROUTE53_ENDPOINT=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_REGION=us-east-1
+    ports:
+      - "4017:4017"
+      - "8097:8097"
+    depends_on:
+      - localstack
+  koorde-node-18:
+    build:
+      context: ../../
+      dockerfile: docker/node.Dockerfile
+    environment:
+      - NODE_ID=0000000000000012
+      - NODE_HOST=koorde-node-18
+      - NODE_PORT=4018
+      - NODE_BIND=0.0.0.0
+      - CACHE_HTTP_PORT=8098
+      - BOOTSTRAP_MODE=route53
+      - DEBRUIJN_DEGREE=2
+      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
+      - ROUTE53_SUFFIX=dht.local
+      - ROUTE53_REGION=us-east-1
+      - ROUTE53_ENDPOINT=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_REGION=us-east-1
+    ports:
+      - "4018:4018"
+      - "8098:8098"
+    depends_on:
+      - localstack
+  koorde-node-19:
+    build:
+      context: ../../
+      dockerfile: docker/node.Dockerfile
+    environment:
+      - NODE_ID=0000000000000013
+      - NODE_HOST=koorde-node-19
+      - NODE_PORT=4019
+      - NODE_BIND=0.0.0.0
+      - CACHE_HTTP_PORT=8099
+      - BOOTSTRAP_MODE=route53
+      - DEBRUIJN_DEGREE=2
+      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
+      - ROUTE53_SUFFIX=dht.local
+      - ROUTE53_REGION=us-east-1
+      - ROUTE53_ENDPOINT=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_REGION=us-east-1
+    ports:
+      - "4019:4019"
+      - "8099:8099"
+    depends_on:
+      - localstack
+  koorde-node-20:
+    build:
+      context: ../../
+      dockerfile: docker/node.Dockerfile
+    environment:
+      - NODE_ID=0000000000000014
+      - NODE_HOST=koorde-node-20
+      - NODE_PORT=4020
+      - NODE_BIND=0.0.0.0
+      - CACHE_HTTP_PORT=8100
+      - BOOTSTRAP_MODE=route53
+      - DEBRUIJN_DEGREE=2
+      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
+      - ROUTE53_SUFFIX=dht.local
+      - ROUTE53_REGION=us-east-1
+      - ROUTE53_ENDPOINT=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_REGION=us-east-1
+    ports:
+      - "4020:4020"
+      - "8100:8100"
+    depends_on:
+      - localstack
+  koorde-node-21:
+    build:
+      context: ../../
+      dockerfile: docker/node.Dockerfile
+    environment:
+      - NODE_ID=0000000000000015
+      - NODE_HOST=koorde-node-21
+      - NODE_PORT=4021
+      - NODE_BIND=0.0.0.0
+      - CACHE_HTTP_PORT=8101
+      - BOOTSTRAP_MODE=route53
+      - DEBRUIJN_DEGREE=2
+      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
+      - ROUTE53_SUFFIX=dht.local
+      - ROUTE53_REGION=us-east-1
+      - ROUTE53_ENDPOINT=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_REGION=us-east-1
+    ports:
+      - "4021:4021"
+      - "8101:8101"
+    depends_on:
+      - localstack
+  koorde-node-22:
+    build:
+      context: ../../
+      dockerfile: docker/node.Dockerfile
+    environment:
+      - NODE_ID=0000000000000016
+      - NODE_HOST=koorde-node-22
+      - NODE_PORT=4022
+      - NODE_BIND=0.0.0.0
+      - CACHE_HTTP_PORT=8102
+      - BOOTSTRAP_MODE=route53
+      - DEBRUIJN_DEGREE=2
+      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
+      - ROUTE53_SUFFIX=dht.local
+      - ROUTE53_REGION=us-east-1
+      - ROUTE53_ENDPOINT=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_REGION=us-east-1
+    ports:
+      - "4022:4022"
+      - "8102:8102"
+    depends_on:
+      - localstack
+  koorde-node-23:
+    build:
+      context: ../../
+      dockerfile: docker/node.Dockerfile
+    environment:
+      - NODE_ID=0000000000000017
+      - NODE_HOST=koorde-node-23
+      - NODE_PORT=4023
+      - NODE_BIND=0.0.0.0
+      - CACHE_HTTP_PORT=8103
+      - BOOTSTRAP_MODE=route53
+      - DEBRUIJN_DEGREE=2
+      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
+      - ROUTE53_SUFFIX=dht.local
+      - ROUTE53_REGION=us-east-1
+      - ROUTE53_ENDPOINT=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_REGION=us-east-1
+    ports:
+      - "4023:4023"
+      - "8103:8103"
+    depends_on:
+      - localstack
+  koorde-node-24:
+    build:
+      context: ../../
+      dockerfile: docker/node.Dockerfile
+    environment:
+      - NODE_ID=0000000000000018
+      - NODE_HOST=koorde-node-24
+      - NODE_PORT=4024
+      - NODE_BIND=0.0.0.0
+      - CACHE_HTTP_PORT=8104
+      - BOOTSTRAP_MODE=route53
+      - DEBRUIJN_DEGREE=2
+      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
+      - ROUTE53_SUFFIX=dht.local
+      - ROUTE53_REGION=us-east-1
+      - ROUTE53_ENDPOINT=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_REGION=us-east-1
+    ports:
+      - "4024:4024"
+      - "8104:8104"
+    depends_on:
+      - localstack
+  koorde-node-25:
+    build:
+      context: ../../
+      dockerfile: docker/node.Dockerfile
+    environment:
+      - NODE_ID=0000000000000019
+      - NODE_HOST=koorde-node-25
+      - NODE_PORT=4025
+      - NODE_BIND=0.0.0.0
+      - CACHE_HTTP_PORT=8105
+      - BOOTSTRAP_MODE=route53
+      - DEBRUIJN_DEGREE=2
+      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
+      - ROUTE53_SUFFIX=dht.local
+      - ROUTE53_REGION=us-east-1
+      - ROUTE53_ENDPOINT=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_REGION=us-east-1
+    ports:
+      - "4025:4025"
+      - "8105:8105"
+    depends_on:
+      - localstack
+  koorde-node-26:
+    build:
+      context: ../../
+      dockerfile: docker/node.Dockerfile
+    environment:
+      - NODE_ID=000000000000001a
+      - NODE_HOST=koorde-node-26
+      - NODE_PORT=4026
+      - NODE_BIND=0.0.0.0
+      - CACHE_HTTP_PORT=8106
+      - BOOTSTRAP_MODE=route53
+      - DEBRUIJN_DEGREE=2
+      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
+      - ROUTE53_SUFFIX=dht.local
+      - ROUTE53_REGION=us-east-1
+      - ROUTE53_ENDPOINT=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_REGION=us-east-1
+    ports:
+      - "4026:4026"
+      - "8106:8106"
+    depends_on:
+      - localstack
+  koorde-node-27:
+    build:
+      context: ../../
+      dockerfile: docker/node.Dockerfile
+    environment:
+      - NODE_ID=000000000000001b
+      - NODE_HOST=koorde-node-27
+      - NODE_PORT=4027
+      - NODE_BIND=0.0.0.0
+      - CACHE_HTTP_PORT=8107
+      - BOOTSTRAP_MODE=route53
+      - DEBRUIJN_DEGREE=2
+      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
+      - ROUTE53_SUFFIX=dht.local
+      - ROUTE53_REGION=us-east-1
+      - ROUTE53_ENDPOINT=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_REGION=us-east-1
+    ports:
+      - "4027:4027"
+      - "8107:8107"
+    depends_on:
+      - localstack
+  koorde-node-28:
+    build:
+      context: ../../
+      dockerfile: docker/node.Dockerfile
+    environment:
+      - NODE_ID=000000000000001c
+      - NODE_HOST=koorde-node-28
+      - NODE_PORT=4028
+      - NODE_BIND=0.0.0.0
+      - CACHE_HTTP_PORT=8108
+      - BOOTSTRAP_MODE=route53
+      - DEBRUIJN_DEGREE=2
+      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
+      - ROUTE53_SUFFIX=dht.local
+      - ROUTE53_REGION=us-east-1
+      - ROUTE53_ENDPOINT=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_REGION=us-east-1
+    ports:
+      - "4028:4028"
+      - "8108:8108"
+    depends_on:
+      - localstack
+  koorde-node-29:
+    build:
+      context: ../../
+      dockerfile: docker/node.Dockerfile
+    environment:
+      - NODE_ID=000000000000001d
+      - NODE_HOST=koorde-node-29
+      - NODE_PORT=4029
+      - NODE_BIND=0.0.0.0
+      - CACHE_HTTP_PORT=8109
+      - BOOTSTRAP_MODE=route53
+      - DEBRUIJN_DEGREE=2
+      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
+      - ROUTE53_SUFFIX=dht.local
+      - ROUTE53_REGION=us-east-1
+      - ROUTE53_ENDPOINT=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_REGION=us-east-1
+    ports:
+      - "4029:4029"
+      - "8109:8109"
+    depends_on:
+      - localstack
+  koorde-node-30:
+    build:
+      context: ../../
+      dockerfile: docker/node.Dockerfile
+    environment:
+      - NODE_ID=000000000000001e
+      - NODE_HOST=koorde-node-30
+      - NODE_PORT=4030
+      - NODE_BIND=0.0.0.0
+      - CACHE_HTTP_PORT=8110
+      - BOOTSTRAP_MODE=route53
+      - DEBRUIJN_DEGREE=2
+      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
+      - ROUTE53_SUFFIX=dht.local
+      - ROUTE53_REGION=us-east-1
+      - ROUTE53_ENDPOINT=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_REGION=us-east-1
+    ports:
+      - "4030:4030"
+      - "8110:8110"
+    depends_on:
+      - localstack
+  koorde-node-31:
+    build:
+      context: ../../
+      dockerfile: docker/node.Dockerfile
+    environment:
+      - NODE_ID=000000000000001f
+      - NODE_HOST=koorde-node-31
+      - NODE_PORT=4031
+      - NODE_BIND=0.0.0.0
+      - CACHE_HTTP_PORT=8111
+      - BOOTSTRAP_MODE=route53
+      - DEBRUIJN_DEGREE=2
+      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
+      - ROUTE53_SUFFIX=dht.local
+      - ROUTE53_REGION=us-east-1
+      - ROUTE53_ENDPOINT=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_REGION=us-east-1
+    ports:
+      - "4031:4031"
+      - "8111:8111"
     depends_on:
       - localstack
