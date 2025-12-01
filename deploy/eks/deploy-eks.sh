@@ -1,113 +1,70 @@
 #!/bin/bash
 set -euo pipefail
 
-# Configuration
-NAMESPACE="${NAMESPACE:-koorde-cache}"
-REPLICAS="${REPLICAS:-10}"
-CLUSTER_NAME="${CLUSTER_NAME:-koorde-cache}"
-REGION="${REGION:-us-east-1}"
-
-echo "============================================"
-echo "  KoordeDHT-Web-Cache EKS Deployment"
-echo "============================================"
-echo "Cluster: ${CLUSTER_NAME}"
-echo "Region: ${REGION}"
-echo "Namespace: ${NAMESPACE}"
-echo "Replicas: ${REPLICAS}"
-echo "============================================"
-echo ""
-
-# Check if kubectl is configured
-if ! kubectl cluster-info &>/dev/null; then
-    echo "Error: kubectl not configured. Run:"
-    echo "  aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${REGION}"
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <chord|koorde>"
     exit 1
 fi
 
-# Check if AWS Load Balancer Controller is installed
-if ! kubectl get deployment -n kube-system aws-load-balancer-controller &>/dev/null; then
-    echo "Warning: AWS Load Balancer Controller not found."
-    echo "Install it with:"
-    echo "  helm install aws-load-balancer-controller eks/aws-load-balancer-controller \\"
-    echo "    -n kube-system --set clusterName=${CLUSTER_NAME}"
-    echo ""
-    read -p "Continue anyway? (y/N) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
+PROTOCOL=$1
+if [[ "$PROTOCOL" != "chord" && "$PROTOCOL" != "koorde" ]]; then
+    echo "Error: Protocol must be 'chord' or 'koorde'"
+    exit 1
 fi
 
+NAMESPACE="${PROTOCOL}-dht"
+REPLICAS="${REPLICAS:-10}"
+
+echo "Deploying ${PROTOCOL} DHT to EKS namespace ${NAMESPACE}..."
+
 # Create namespace
-echo "[1/7] Creating namespace..."
 kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
 
-# Apply ConfigMap
-echo "[2/7] Applying ConfigMap..."
-kubectl apply -f configmap.yaml -n ${NAMESPACE}
+# Apply configurations
+echo "Applying configmap-${PROTOCOL}.yaml..."
+kubectl apply -f configmap-${PROTOCOL}.yaml -n ${NAMESPACE}
 
-# Apply StatefulSet
-echo "[3/7] Deploying StatefulSet (${REPLICAS} replicas)..."
-kubectl apply -f statefulset.yaml -n ${NAMESPACE}
-kubectl scale statefulset koorde-node --replicas=${REPLICAS} -n ${NAMESPACE}
+# Apply protocol-specific resources
+if [[ "$PROTOCOL" == "chord" ]]; then
+    echo "Applying Chord-specific ConfigMap and StatefulSet..."
+    kubectl apply -f chord-entrypoint-configmap.yaml -n ${NAMESPACE}
+    kubectl apply -f chord-statefulset.yaml -n ${NAMESPACE}
+elif [[ "$PROTOCOL" == "koorde" ]]; then
+    echo "Applying Koorde-specific StatefulSet..."
+    kubectl apply -f statefulset-koorde.yaml -n ${NAMESPACE}
+fi
 
-# Apply Services
-echo "[4/7] Creating Services..."
+# Scale replicas
+echo "Scaling to ${REPLICAS} replicas..."
+kubectl scale statefulset dht-node --replicas=${REPLICAS} -n ${NAMESPACE}
+
+# Apply services
+echo "Applying services..."
 kubectl apply -f service-headless.yaml -n ${NAMESPACE}
 kubectl apply -f service-cache.yaml -n ${NAMESPACE}
 kubectl apply -f service-grpc.yaml -n ${NAMESPACE}
 
-# Optional: Apply HPA
-if [[ -f hpa.yaml ]]; then
-    echo "[5/7] Applying HorizontalPodAutoscaler..."
-    kubectl apply -f hpa.yaml -n ${NAMESPACE}
-else
-    echo "[5/7] Skipping HPA (file not found)"
-fi
-
-# Optional: Apply PDB
-if [[ -f pdb.yaml ]]; then
-    echo "[6/7] Applying PodDisruptionBudget..."
-    kubectl apply -f pdb.yaml -n ${NAMESPACE}
-else
-    echo "[6/7] Skipping PDB (file not found)"
-fi
-
 # Wait for rollout
-echo "[7/7] Waiting for pods to be ready..."
-kubectl rollout status statefulset/koorde-node -n ${NAMESPACE} --timeout=10m
+echo "Waiting for pods to be ready..."
+kubectl rollout status statefulset/dht-node -n ${NAMESPACE} --timeout=5m
 
-# Display status
-echo ""
-echo "============================================"
-echo "  Deployment Status"
-echo "============================================"
-kubectl get pods -l app=koorde-node -n ${NAMESPACE}
-echo ""
+# Wait for load balancer
+echo "Waiting for load balancer..."
+kubectl wait --for=condition=ready \
+  service/dht-cache-http \
+  -n ${NAMESPACE} \
+  --timeout=5m
 
-# Wait for Load Balancer
-echo "Waiting for Load Balancer to be ready..."
-sleep 10
-
-HTTP_LB=$(kubectl get svc koorde-cache-http -n ${NAMESPACE} \
-  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "pending")
-
-GRPC_LB=$(kubectl get svc koorde-grpc -n ${NAMESPACE} \
-  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "pending")
+# Get load balancer URL
+LB_URL=$(kubectl get svc dht-cache-http -n ${NAMESPACE} \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 
 echo ""
-echo "============================================"
-echo "  Access Information"
-echo "============================================"
-echo "HTTP Cache Load Balancer: http://${HTTP_LB}"
-echo "gRPC DHT Load Balancer: ${GRPC_LB}:4000"
+echo "Deployment complete!"
+echo "Protocol: ${PROTOCOL}"
+echo "Namespace: ${NAMESPACE}"
+echo "HTTP Cache URL: http://${LB_URL}"
 echo ""
-echo "Test commands:"
-echo "  curl \"http://${HTTP_LB}/health\""
-echo "  curl \"http://${HTTP_LB}/cache?url=https://httpbin.org/json\""
-echo "  curl \"http://${HTTP_LB}/metrics\" | jq"
-echo ""
-echo "============================================"
-echo "  Deployment Complete!"
-echo "============================================"
-
+echo "Test with:"
+echo "  curl \"http://${LB_URL}/cache?url=https://httpbin.org/json\""
+echo "  curl \"http://${LB_URL}/metrics\" | jq"

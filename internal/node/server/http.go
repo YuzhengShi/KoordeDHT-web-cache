@@ -211,24 +211,27 @@ func (s *HTTPCacheServer) handleCacheRequest(w http.ResponseWriter, r *http.Requ
 
 	// STEP 4: If we do not own the key, forward it (even if lookup returned self)
 	if !ownsKey {
-		if entry, ok := s.cache.Get(url); ok {
-			s.lgr.Info("Cache HIT (near)",
-				logger.F("url", url),
-				logger.F("size_bytes", entry.Size),
-				logger.F("latency_ms", time.Since(start).Milliseconds()))
+		// FORCE SKIP NEAR CACHE for pure DHT testing
+		if false { // if entry, ok := s.cache.Get(url); ok {
+			/*
+				s.lgr.Info("Cache HIT (near)",
+					logger.F("url", url),
+					logger.F("size_bytes", entry.Size),
+					logger.F("latency_ms", time.Since(start).Milliseconds()))
 
-			statusCode := entry.StatusCode
-			if statusCode < 100 {
-				statusCode = http.StatusOK
-			}
+				statusCode := entry.StatusCode
+				if statusCode < 100 {
+					statusCode = http.StatusOK
+				}
 
-			w.Header().Set("Content-Type", entry.ContentType)
-			w.Header().Set("X-Cache", "HIT-NEAR")
-			w.Header().Set("X-Entry-Node", s.node.Self().Addr)
-			w.Header().Set("X-Latency-Ms", fmt.Sprintf("%.2f", time.Since(start).Seconds()*1000))
-			w.WriteHeader(statusCode)
-			w.Write(entry.Content)
-			return
+				w.Header().Set("Content-Type", entry.ContentType)
+				w.Header().Set("X-Cache", "HIT-NEAR")
+				w.Header().Set("X-Entry-Node", s.node.Self().Addr)
+				w.Header().Set("X-Latency-Ms", fmt.Sprintf("%.2f", time.Since(start).Seconds()*1000))
+				w.WriteHeader(statusCode)
+				w.Write(entry.Content)
+				return
+			*/
 		}
 
 		targetNode := responsible

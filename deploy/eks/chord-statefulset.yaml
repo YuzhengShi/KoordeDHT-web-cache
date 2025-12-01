@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: dht-node
+  namespace: chord-dht
+  labels:
+    app: dht-node
+spec:
+  serviceName: dht-headless
+  replicas: 10
+  selector:
+    matchLabels:
+      app: dht-node
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: dht-node
+    spec:
+      containers:
+      - name: dht-node
+        image: 007438440430.dkr.ecr.us-west-2.amazonaws.com/koorde-node:latest
+        imagePullPolicy: Always
+        command: ["/bin/bash", "/scripts/entrypoint-chord.sh"]
+        args: ["/usr/local/bin/koorde", "-config", "/etc/koorde/config.yaml"]
+        ports:
+        - containerPort: 4000
+          name: grpc
+          protocol: TCP
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NODE_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        envFrom:
+        - configMapRef:
+            name: dht-config
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 6
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: entrypoint-script
+          mountPath: /scripts
+      volumes:
+      - name: entrypoint-script
+        configMap:
+          name: chord-entrypoint-script
+          defaultMode: 0755
+      terminationGracePeriodSeconds: 30

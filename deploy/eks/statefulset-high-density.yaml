@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: dht-node
+  labels:
+    app: dht-node
+spec:
+  serviceName: dht-headless
+  replicas: 10
+  selector:
+    matchLabels:
+      app: dht-node
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: dht-node
+    spec:
+      containers:
+      - name: dht-node
+        image: flaviosimonelli/koorde-node:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 4000
+          name: grpc
+          protocol: TCP
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NODE_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        # Bootstrap to first 3 pods for initial ring
+        - name: BOOTSTRAP_PEERS
+          value: "dht-node-0.dht-headless.NAMESPACE_PLACEHOLDER.svc.cluster.local:4000,dht-node-1.dht-headless.NAMESPACE_PLACEHOLDER.svc.cluster.local:4000,dht-node-2.dht-headless.NAMESPACE_PLACEHOLDER.svc.cluster.local:4000"
+        envFrom:
+        - configMapRef:
+            name: dht-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "20m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+      terminationGracePeriodSeconds: 30

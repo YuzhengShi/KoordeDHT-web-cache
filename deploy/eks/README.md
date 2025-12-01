@@ -35,97 +35,160 @@ StatefulSet with persistent identity
 
 ## Prerequisites
 
-### AWS Resources
+### AWS Learner Lab Setup (us-west-2)
 
-1. **EKS Cluster**
+1. **Login to AWS Learner Lab**
+   - Go to your learning platform and start the AWS Learner Lab.
+   - Click **AWS Details** to see your credentials.
+   - Click **Show** next to "AWS CLI".
+
+   > **Tip:** For a clean setup, see our [Virtual Environment Setup Guide](SETUP_VENV.md) to install tools in an isolated environment.
+
+2. **Configure AWS CLI**
+   - Copy the text from the "AWS CLI" box.
+   - Paste it into your `~/.aws/credentials` file (or run `aws configure`).
+   - Ensure your region is set to `us-west-2`.
+
    ```bash
-   eksctl create cluster \
-     --name koorde-cache \
-     --region us-east-1 \
-     --nodegroup-name standard-workers \
-     --node-type t3.medium \
-     --nodes 3 \
-     --nodes-min 3 \
-     --nodes-max 6 \
-     --managed
+   aws configure set region us-west-2
    ```
 
-2. **kubectl** configured
+3. **Create EKS Cluster**
+   - Use `eksctl` to create the cluster. This will take ~15-20 minutes.
+   
    ```bash
-   aws eks update-kubeconfig --name koorde-cache --region us-east-1
+   eksctl create cluster -f deploy/eks/cluster-config.yaml
+   
    ```
 
-3. **AWS Load Balancer Controller** installed
+4. **Configure kubectl**
+   - Once the cluster is ready, update your kubeconfig:
+   
    ```bash
-   # Install with Helm
+   aws eks update-kubeconfig --name koorde-cache --region us-west-2
+   ```
+
+5. **Install Load Balancer Controller (Required for External Access)**
+   - **Note for Learner Lab:** You might need to use the existing `LabRole` if you lack permissions to create new IAM roles. However, standard installation often works if you have `AdministratorAccess` (which Learner Lab usually provides).
+
+   ```bash
+   # Add Helm repo
    helm repo add eks https://aws.github.io/eks-charts
    helm repo update
    
+   # Install Controller
    helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
      -n kube-system \
      --set clusterName=koorde-cache \
-     --set serviceAccount.create=true \
-     --set serviceAccount.name=aws-load-balancer-controller
+     --set serviceAccount.create=false \
+     --set serviceAccount.name=default
    ```
+   *(Note: In a production environment, you would use IRSA (IAM Roles for Service Accounts), but for Learner Lab, using the default node role is often easier if IRSA setup is restricted.)*
 
-4. **IAM OIDC Provider** (for service accounts)
-   ```bash
-   eksctl utils associate-iam-oidc-provider \
-     --cluster koorde-cache \
-     --approve
-   ```
+---
+
+## Build and Push Docker Image to ECR
+
+Before deploying, you need to build the Docker image and push it to Amazon ECR:
+
+```bash
+# Navigate to deploy/eks directory
+cd deploy/eks
+
+# Run the build and push script
+./build-and-push-ecr.sh
+```
+
+This script will:
+1. Create an ECR repository (if it doesn't exist)
+2. Authenticate Docker to ECR
+3. Build the Docker image from `docker/node.Dockerfile`
+4. Tag and push the image to ECR
+
+The image URI will be: `<ACCOUNT_ID>.dkr.ecr.us-west-2.amazonaws.com/koorde-node:latest`
+
+> **Note:** Make sure you have Docker running and AWS CLI configured before running this script.
 
 ---
 
 ## Quick Start
 
-### 1. Create Namespace
+### 1. Deploy Chord or Koorde
 
 ```bash
-kubectl create namespace koorde-cache
-kubectl config set-context --current --namespace=koorde-cache
+# Deploy Chord
+./deploy-eks.sh chord
+
+# Deploy Koorde
+./deploy-eks.sh koorde
 ```
 
-### 2. Apply Configurations
+### 2. Wait for Pods
 
 ```bash
-# Apply all manifests
-kubectl apply -f configmap.yaml
-kubectl apply -f statefulset.yaml
-kubectl apply -f service-headless.yaml
-kubectl apply -f service-cache.yaml
-kubectl apply -f service-grpc.yaml
-```
-
-### 3. Wait for Pods
-
-```bash
-# Watch pod startup
-kubectl get pods -w
+# Watch pod startup (use namespace for the protocol you deployed)
+kubectl get pods -n koorde-dht -w
+# or for Chord:
+kubectl get pods -n chord-dht -w
 
 # Wait for all pods to be ready
-kubectl wait --for=condition=ready pod -l app=koorde-node --timeout=300s
+kubectl wait --for=condition=ready pod -l app=dht-node -n koorde-dht --timeout=300s
+# or for Chord:
+kubectl wait --for=condition=ready pod -l app=dht-node -n chord-dht --timeout=300s
 ```
 
-### 4. Get Load Balancer URL
+### 3. Get Load Balancer URL
 
 ```bash
-# HTTP Cache Load Balancer
-kubectl get svc koorde-cache-http -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+# HTTP Cache Load Balancer (use the namespace for your protocol)
 
-# Example output: a1b2c3d4...us-east-1.elb.amazonaws.com
+# For Koorde
+kubectl get svc dht-cache-http -n koorde-dht -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+
+# For Chord
+kubectl get svc dht-cache-http -n chord-dht -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+
+# Example output: k8s-koordedh-dhtcache-xxxxx.elb.us-west-2.amazonaws.com
 ```
 
-### 5. Test Cache
+### 4. Test Cache
 
 ```bash
-LB_URL=$(kubectl get svc koorde-cache-http -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+# Set the Load Balancer URL (for Koorde)
+LB_URL=$(kubectl get svc dht-cache-http -n koorde-dht -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+
+# Set the Load Balancer URL (for Chord)
+LB_URL=$(kubectl get svc dht-cache-http -n chord-dht -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 
 # Test cache request
 curl "http://${LB_URL}/cache?url=https://httpbin.org/json"
 
-# Check metrics
+# Check metrics (includes DHT routing stats)
 curl "http://${LB_URL}/metrics" | jq
+```
+
+### 5. Run Workload Generator
+
+```bash
+# Run workload to generate DHT traffic
+./cache-workload --target http://${LB_URL} --urls 100 --requests 1000 --rate 100 --zipf 1.2
+
+# Check metrics after workload to verify de Bruijn routing usage
+curl "http://${LB_URL}/metrics" | jq '.routing'
+```
+
+Expected output shows de Bruijn routing activity:
+```json
+{
+  "debruijn_count": 8,
+  "has_predecessor": true,
+  "stats": {
+    "de_bruijn_success": 14782,
+    "de_bruijn_failures": 0,
+    "protocol": "koorde",
+    "successor_fallbacks": 353
+  }
+}
 ```
 
 ---
@@ -411,11 +474,13 @@ chmod +x deploy-eks.sh
 ### Horizontal Scaling
 
 ```bash
-# Scale up to 20 nodes
-kubectl scale statefulset koorde-node --replicas=20
+# Scale up to 20 nodes (use correct namespace)
+kubectl scale statefulset dht-node --replicas=20 -n koorde-dht
+kubectl scale statefulset dht-node --replicas=20 -n chord-dht
 
 # Scale down to 5 nodes
-kubectl scale statefulset koorde-node --replicas=5
+kubectl scale statefulset dht-node --replicas=5 -n koorde-dht
+kubectl scale statefulset dht-node --replicas=5 -n chord-dht
 ```
 
 ### Autoscaling (HPA)
@@ -519,7 +584,7 @@ metadata:
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:123456789012:certificate/abc123
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-west-2:123456789012:certificate/abc123
     alb.ingress.kubernetes.io/healthcheck-path: /health
     alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
     alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
@@ -716,7 +781,8 @@ spec:
 ### Access from Outside Cluster
 
 ```bash
-LB_URL=$(kubectl get svc koorde-cache-http -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+# Get the Load Balancer URL (use correct namespace)
+LB_URL=$(kubectl get svc dht-cache-http -n koorde-dht -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 
 # Cache test
 curl "http://${LB_URL}/cache?url=https://httpbin.org/json"
@@ -732,7 +798,7 @@ curl "http://${LB_URL}/health"
 
 ```bash
 # Port-forward to specific pod
-kubectl port-forward koorde-node-0 8080:8080 4000:4000
+kubectl port-forward dht-node-0 8080:8080 4000:4000 -n koorde-dht
 
 # Test locally
 curl "http://localhost:8080/cache?url=https://httpbin.org/json"
@@ -758,20 +824,17 @@ kubectl run -it --rm koorde-client \
 # Build workload generator
 docker build -t cache-workload:latest -f docker/workload.Dockerfile .
 
-# Run as Kubernetes Job
-kubectl create job cache-workload \
-  --image=cache-workload:latest \
-  -- --target http://koorde-cache-http.koorde-cache.svc.cluster.local \
-     --urls 1000 \
-     --requests 10000 \
-     --rate 100 \
-     --zipf 0.9
+# Get the Load Balancer URL
+LB_URL=$(kubectl get svc dht-cache-http -n koorde-dht -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+
+# Run workload from local machine
+./cache-workload --target http://${LB_URL} --urls 1000 --requests 10000 --rate 100 --zipf 1.2
 ```
 
 ### Using kubectl run
 
 ```bash
-LB_URL=$(kubectl get svc koorde-cache-http -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+LB_URL=$(kubectl get svc dht-cache-http -n koorde-dht -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 
 kubectl run -it --rm load-test \
   --image=curlimages/curl:latest \
@@ -791,31 +854,27 @@ kubectl run -it --rm load-test \
 ### View Logs
 
 ```bash
-# All pods
-kubectl logs -l app=koorde-node --tail=100 -f
+# All pods in namespace
+kubectl logs -l app=dht-node -n koorde-dht --tail=100 -f
 
 # Specific pod
-kubectl logs koorde-node-0 -f
+kubectl logs dht-node-0 -n koorde-dht -f
 
 # Previous instance (after restart)
-kubectl logs koorde-node-0 --previous
+kubectl logs dht-node-0 -n koorde-dht --previous
 ```
 
 ### Exec into Pod
 
 ```bash
-kubectl exec -it koorde-node-0 -- sh
-
-# Check routing table via gRPC (if client installed)
-kubectl exec -it koorde-node-0 -- \
-  /usr/local/bin/koorde-client --addr localhost:4000 getrt
+kubectl exec -it dht-node-0 -n koorde-dht -- sh
 ```
 
 ### Metrics
 
 ```bash
 # Per-pod metrics
-kubectl top pods -l app=koorde-node
+kubectl top pods -l app=dht-node -n koorde-dht
 
 # Node metrics
 kubectl top nodes
@@ -828,28 +887,29 @@ kubectl top nodes
 ### Rolling Update
 
 ```bash
-# Update image
-kubectl set image statefulset/koorde-node \
-  koorde=flaviosimonelli/koorde-node:v2.0.0
+# Update image (use your ECR URI)
+kubectl set image statefulset/dht-node \
+  dht-node=<ACCOUNT_ID>.dkr.ecr.us-west-2.amazonaws.com/koorde-node:v2.0.0 \
+  -n koorde-dht
 
 # Monitor rollout
-kubectl rollout status statefulset/koorde-node
+kubectl rollout status statefulset/dht-node -n koorde-dht
 
 # Rollback if needed
-kubectl rollout undo statefulset/koorde-node
+kubectl rollout undo statefulset/dht-node -n koorde-dht
 ```
 
 ### Blue-Green Deployment
 
 ```yaml
 # Deploy new version alongside old
-kubectl apply -f statefulset-v2.yaml
+kubectl apply -f statefulset-v2.yaml -n koorde-dht
 
 # Switch traffic to new version
-kubectl patch service koorde-cache-http -p '{"spec":{"selector":{"version":"v2"}}}'
+kubectl patch service dht-cache-http -n koorde-dht -p '{"spec":{"selector":{"version":"v2"}}}'
 
 # Delete old version
-kubectl delete statefulset koorde-node-v1
+kubectl delete statefulset dht-node-v1 -n koorde-dht
 ```
 
 ---
@@ -861,20 +921,16 @@ kubectl delete statefulset koorde-node-v1
 ```bash
 # For each pod, export storage
 for i in {0..9}; do
-  kubectl exec koorde-node-$i -- \
-    /usr/local/bin/koorde-client --addr localhost:4000 getstore > backup-node-$i.json
+  kubectl exec dht-node-$i -n koorde-dht -- \
+    cat /tmp/dht-state.json > backup-node-$i.json 2>/dev/null || echo "No state for node $i"
 done
 ```
 
 ### Restore
 
 ```bash
-# Restore data to new cluster
-for i in {0..9}; do
-  cat backup-node-$i.json | \
-  kubectl exec -i koorde-node-$i -- \
-    /usr/local/bin/koorde-client --addr localhost:4000 put <key> <value>
-done
+# Restore is application-specific
+# DHT state is typically rebuilt automatically when nodes rejoin the ring
 ```
 
 ---
@@ -956,35 +1012,35 @@ kubectl create secret generic koorde-secrets \
 
 ```bash
 # Describe pod
-kubectl describe pod koorde-node-0
+kubectl describe pod dht-node-0 -n koorde-dht
 
 # Check events
-kubectl get events --sort-by='.lastTimestamp' -n koorde-cache
+kubectl get events --sort-by='.lastTimestamp' -n koorde-dht
 
 # Check logs
-kubectl logs koorde-node-0
+kubectl logs dht-node-0 -n koorde-dht
 ```
 
 ### DHT Not Stabilizing
 
 ```bash
 # Check bootstrap pods are running
-kubectl get pods -l app=koorde-node | head -n 4
+kubectl get pods -l app=dht-node -n koorde-dht | head -n 4
 
 # Verify DNS resolution
-kubectl exec koorde-node-5 -- \
-  nslookup koorde-node-0.koorde-headless.koorde-cache.svc.cluster.local
+kubectl exec dht-node-5 -n koorde-dht -- \
+  nslookup dht-node-0.dht-headless.koorde-dht.svc.cluster.local
 
 # Check connectivity
-kubectl exec koorde-node-5 -- \
-  nc -zv koorde-node-0.koorde-headless.koorde-cache.svc.cluster.local 4000
+kubectl exec dht-node-5 -n koorde-dht -- \
+  nc -zv dht-node-0.dht-headless.koorde-dht.svc.cluster.local 4000
 ```
 
 ### Load Balancer Not Ready
 
 ```bash
 # Check service
-kubectl describe svc koorde-cache-http
+kubectl describe svc dht-cache-http -n koorde-dht
 
 # Verify AWS Load Balancer Controller is running
 kubectl get deployment -n kube-system aws-load-balancer-controller
@@ -997,13 +1053,13 @@ aws elbv2 describe-target-groups
 
 ```bash
 # Check pod resources
-kubectl top pods -l app=koorde-node
+kubectl top pods -l app=dht-node -n koorde-dht
 
 # Check if pods are being throttled
-kubectl describe pod koorde-node-0 | grep -i throttl
+kubectl describe pod dht-node-0 -n koorde-dht | grep -i throttl
 
 # Increase resources
-kubectl patch statefulset koorde-node -p '{"spec":{"template":{"spec":{"containers":[{"name":"koorde","resources":{"limits":{"cpu":"2000m","memory":"4Gi"}}}]}}}}'
+kubectl patch statefulset dht-node -n koorde-dht -p '{"spec":{"template":{"spec":{"containers":[{"name":"dht-node","resources":{"limits":{"cpu":"2000m","memory":"4Gi"}}}]}}}}'
 ```
 
 ---
@@ -1041,6 +1097,159 @@ For development:
 - Use t3.small nodes: ~$50/month
 - Single node cluster: ~$90/month
 - Stop cluster when not in use
+
+---
+
+## Benchmarking and Comparing KoordeDHT vs Chord
+
+You can benchmark and compare KoordeDHT and Chord at various cluster sizes using the following steps:
+
+### 1. Deploy Both Systems
+
+- Deploy KoordeDHT:
+  ```bash
+  ./deploy-eks.sh koorde
+  ```
+- Deploy Chord:
+  ```bash
+  ./deploy-eks.sh chord
+  ```
+
+### 2. Scale the Number of Nodes
+
+Adjust the number of nodes for each system as needed:
+```bash
+# For Koorde (namespace: koorde-dht)
+kubectl scale statefulset dht-node --replicas=20 -n koorde-dht
+
+# For Chord (namespace: chord-dht)
+kubectl scale statefulset dht-node --replicas=20 -n chord-dht
+```
+Change `20` to your desired node count.
+
+### 3. Wait for All Pods to Be Ready
+
+Monitor pod status:
+```bash
+kubectl get pods -n koorde-dht -w
+kubectl get pods -n chord-dht -w
+```
+
+### 4. Run Workload Generator
+
+For each system, run the workload generator targeting the respective load balancer:
+```bash
+# For Koorde
+LB_KOORDE=$(kubectl get svc dht-cache-http -n koorde-dht -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+./cache-workload --target http://${LB_KOORDE} --urls 1000 --requests 10000 --rate 100 --zipf 1.2
+
+# For Chord
+LB_CHORD=$(kubectl get svc dht-cache-http -n chord-dht -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+./cache-workload --target http://${LB_CHORD} --urls 1000 --requests 10000 --rate 100 --zipf 1.2
+```
+
+### 5. Collect and Save Results
+
+- Save the results from each run (e.g., `results-koorde.csv`, `results-chord.csv`).
+- Fetch `/metrics` from each system after the workload for detailed routing and cache stats:
+  ```bash
+  curl "http://${LB_KOORDE}/metrics" | jq > metrics-koorde.json
+  curl "http://${LB_CHORD}/metrics" | jq > metrics-chord.json
+  ```
+
+### 6. Scale Up for Large Node Counts
+
+- Increase the number of replicas as needed and repeat the tests.
+- Monitor pod health and resource usage:
+  ```bash
+  kubectl top pods -n koorde-dht
+  kubectl top pods -n chord-dht
+  ```
+
+### 7. Analyze and Compare
+
+- Compare latency, throughput, cache hit/miss rates, and routing metrics between Koorde and Chord.
+- Look for scalability trends as you increase the number of nodes.
+
+### 8. Automate (Optional)
+
+- Use or adapt the provided benchmark scripts (e.g., `benchmark-chord-vs-koorde.ps1`, `benchmark-koorde-only.ps1`) to automate multi-run comparisons.
+
+---
+
+## Cleanup and Shutdown
+
+### Save Your Results Before Shutdown
+
+```bash
+# Export experiment data
+kubectl get pods -n koorde-dht -o wide > pod-status.txt
+kubectl top pods -n koorde-dht > resource-usage.txt 2>/dev/null || true
+
+# Save metrics
+LB_URL=$(kubectl get svc dht-cache-http -n koorde-dht -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+curl "http://${LB_URL}/metrics" | jq > final-metrics.json
+
+# Copy any result CSVs
+cp results*.csv ~/
+```
+
+### Delete Deployment (Keep Cluster)
+
+To remove the DHT deployment but keep the EKS cluster running:
+
+```bash
+# Navigate to deploy/eks directory
+cd deploy/eks
+
+# Destroy Koorde deployment
+./destroy-eks.sh koorde
+
+# Destroy Chord deployment (if deployed)
+./destroy-eks.sh chord
+```
+
+This script will:
+1. Delete Services (removes load balancers)
+2. Delete StatefulSet (removes pods)
+3. Delete ConfigMap
+4. Delete Namespace
+
+### Delete EKS Cluster (Full Cleanup)
+
+To completely remove the EKS cluster and all resources:
+
+```bash
+# First, delete all deployments to remove load balancers
+./destroy-eks.sh koorde
+./destroy-eks.sh chord
+
+# Wait for load balancers to be fully deleted (important!)
+echo "Waiting for load balancers to be deleted..."
+sleep 60
+
+# Delete the EKS cluster
+eksctl delete cluster --name koorde-cache --region us-west-2
+```
+
+> **Important for AWS Learner Lab:**
+> - Learner Lab sessions expire after 4 hours
+> - Always delete resources before session expires to avoid orphaned resources
+> - If the session expires with resources running, start a new session and delete them
+
+### Verify Cleanup
+
+```bash
+# Check no resources remain
+kubectl get all -n koorde-dht
+kubectl get all -n chord-dht
+
+# Verify no load balancers (can incur charges)
+aws elbv2 describe-load-balancers --query 'LoadBalancers[*].[LoadBalancerName,State.Code]' --output table
+
+# Verify cluster is deleted
+eksctl get cluster --region us-west-2
+```
 
 ---
 

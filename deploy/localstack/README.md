@@ -33,7 +33,7 @@ This directory contains scripts to deploy the KoordeDHT cluster to a local envir
     
     **Via Load Balancer (recommended for fair comparison with AWS):**
     ```bash
-    curl http://localhost:9000/health
+    curl http://localhost:9000/cache?url=https://httpbin.org/json
     curl http://localhost:9000/cache?url=https://httpbin.org/json
     ```
     

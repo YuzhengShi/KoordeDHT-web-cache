@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chord-entrypoint-script
+  namespace: chord-dht
+data:
+  entrypoint-chord.sh: |
+    #!/bin/bash
+    set -euo pipefail
+
+    # Chord-specific entrypoint for Kubernetes
+    # This script sets up the correct bootstrap peers for Chord in the chord-dht namespace.
+
+    NAMESPACE="chord-dht"
+    STATEFULSET_NAME="dht-node"
+    HEADLESS_SERVICE="dht-headless"
+    PORT="4000"
+
+    # Get pod ordinal from hostname (assumes StatefulSet pod naming: dht-node-0, dht-node-1, ...)
+    ORDINAL=$(echo "$HOSTNAME" | awk -F'-' '{print $NF}')
+
+    # Node 0 starts as a new ring, others join it
+    if [ "$ORDINAL" = "0" ]; then
+      export BOOTSTRAP_PEERS=""
+      echo "[entrypoint-chord.sh] This is node-0. Starting new Chord ring."
+    else
+      # Generate bootstrap peer list (first 3 pods by default)
+      PEERS=""
+      for i in 0 1 2; do
+        PEERS+="${STATEFULSET_NAME}-${i}.${HEADLESS_SERVICE}.${NAMESPACE}.svc.cluster.local:${PORT},"
+      done
+      # Remove trailing comma
+      PEERS=${PEERS%,}
+      
+      export BOOTSTRAP_PEERS="$PEERS"
+      echo "[entrypoint-chord.sh] This is node-$ORDINAL. Joining Chord ring via peers: $BOOTSTRAP_PEERS"
+    fi
+
+    # Start the Chord node
+    exec "$@"
