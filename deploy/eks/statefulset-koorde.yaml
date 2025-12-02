@@ -6,7 +6,7 @@ metadata:
     app: dht-node
 spec:
   serviceName: dht-headless
-  replicas: 10
+  replicas: 8
   selector:
     matchLabels:
       app: dht-node
@@ -17,59 +17,71 @@ spec:
         app: dht-node
     spec:
       containers:
-      - name: dht-node
-        image: 007438440430.dkr.ecr.us-west-2.amazonaws.com/koorde-node:latest
-        imagePullPolicy: Always
-        command: ["/entrypoint.sh"]
-        args: ["/usr/local/bin/koorde", "-config", "/etc/koorde/config.yaml"]
-        ports:
-        - containerPort: 4000
-          name: grpc
-          protocol: TCP
-        - containerPort: 8080
-          name: http
-          protocol: TCP
-        env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: NODE_HOST
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        envFrom:
-        - configMapRef:
-            name: dht-config
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "2Gi"
-            cpu: "1000m"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-          initialDelaySeconds: 60
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 6
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 3
+        - name: dht-node
+          image: 007438440430.dkr.ecr.us-west-2.amazonaws.com/koorde-node:latest
+          imagePullPolicy: Always
+          command: ['/bin/sh', '-c']
+          args:
+            - |
+              ORDINAL=$(echo $HOSTNAME | awk -F'-' '{print $NF}')
+              if [ "$ORDINAL" = "0" ]; then
+                export BOOTSTRAP_PEERS=""
+                echo "Node-0: Creating new DHT ring"
+              else
+                export BOOTSTRAP_PEERS="dht-node-0.dht-headless.koorde-dht.svc.cluster.local:4000"
+                echo "Node-$ORDINAL: Joining DHT via node-0"
+                echo "Waiting for node-0 to be ready..."
+                sleep 30
+              fi
+              exec /usr/local/bin/koorde -config /etc/koorde/config.yaml
+          ports:
+            - containerPort: 4000
+              name: grpc
+              protocol: TCP
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: NODE_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          envFrom:
+            - configMapRef:
+                name: dht-config
+          resources:
+            requests:
+              memory: '512Mi'
+              cpu: '250m'
+            limits:
+              memory: '2Gi'
+              cpu: '1000m'
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
       terminationGracePeriodSeconds: 30

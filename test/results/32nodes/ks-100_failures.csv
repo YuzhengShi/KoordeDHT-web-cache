@@ -1,0 +1,6 @@
+Method,Name,Error,Occurrences
+GET,/cache [Random],CatchResponseError('Got status code 201'),139
+GET,/cache [Zipf],CatchResponseError('Got status code 202'),712
+GET,/cache [Random],CatchResponseError('Got status code 202'),118
+GET,/cache [Zipf],CatchResponseError('Got status code 201'),829
+GET,/cache [Random],CatchResponseError('Got status code 502'),1
