@@ -10,31 +10,8 @@ It mirrors the **AWS EKS architecture** described in `deploy/eks/README.md`, but
 
 ## Architecture Overview
 
-┌─────────────────────────────────────────────────────────────────┐
-│                     Local Machine (Docker)                       │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│   ┌────────────────┐                                             │
-│   │   LocalStack   │  ← Emulates Route53 (port 4566)             │
-│   │   (Route53)    │    DNS-based node discovery                 │
-│   └───────┬────────┘                                             │
-│           │ Node registration & discovery                        │
-│           ▼                                                      │
-│   ┌───────────────────────────────────────────────────────┐      │
-│   │              Koorde DHT Nodes (16 nodes)              │      │
-│   │  ┌──────┐ ┌──────┐ ┌──────┐     ┌───────┐             │      │
-│   │  │Node-0│ │Node-1│ │Node-2│ ... │Node-15│             │      │
-│   │  │:8080 │ │:8081 │ │:8082 │     │:8095  │             │      │
-│   │  └──────┘ └──────┘ └──────┘     └───────┘             │      │
-│   └───────────────────────────────────────────────────────┘      │
-│           ▲                                                      │
-│           │ Load balanced                                        │
-│   ┌───────┴────────┐                                             │
-│   │   Nginx LB     │  ← http://localhost:9000                    │
-│   │   (port 9000)  │    (like AWS NLB in production)             │
-│   └────────────────┘                                             │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+
+<img width="749" height="625" alt="image" src="https://github.com/user-attachments/assets/3dddbef6-3705-461a-8c6f-a5942ba113e4" />
 
 Conceptually, this LocalStack setup matches the EKS architecture:
 
