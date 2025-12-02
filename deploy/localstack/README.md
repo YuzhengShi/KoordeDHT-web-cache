@@ -10,6 +10,32 @@ It mirrors the **AWS EKS architecture** described in `deploy/eks/README.md`, but
 
 ## Architecture Overview
 
+┌─────────────────────────────────────────────────────────────────┐
+│                     Local Machine (Docker)                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   ┌────────────────┐                                             │
+│   │   LocalStack   │  ← Emulates Route53 (port 4566)             │
+│   │   (Route53)    │    DNS-based node discovery                 │
+│   └───────┬────────┘                                             │
+│           │ Node registration & discovery                        │
+│           ▼                                                      │
+│   ┌───────────────────────────────────────────────────────┐      │
+│   │              Koorde DHT Nodes (16 nodes)              │      │
+│   │  ┌──────┐ ┌──────┐ ┌──────┐     ┌───────┐             │      │
+│   │  │Node-0│ │Node-1│ │Node-2│ ... │Node-15│             │      │
+│   │  │:8080 │ │:8081 │ │:8082 │     │:8095  │             │      │
+│   │  └──────┘ └──────┘ └──────┘     └───────┘             │      │
+│   └───────────────────────────────────────────────────────┘      │
+│           ▲                                                      │
+│           │ Load balanced                                        │
+│   ┌───────┴────────┐                                             │
+│   │   Nginx LB     │  ← http://localhost:9000                    │
+│   │   (port 9000)  │    (like AWS NLB in production)             │
+│   └────────────────┘                                             │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+
 Conceptually, this LocalStack setup matches the EKS architecture:
 
 - **LocalStack (Route53 emulation)**: simulates AWS Route53 for name-based bootstrap/discovery.
