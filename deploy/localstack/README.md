@@ -13,15 +13,16 @@ It mirrors the **AWS EKS architecture** described in `deploy/eks/README.md`, but
 Conceptually, this LocalStack setup matches the EKS architecture:
 
 - **LocalStack (Route53 emulation)**: simulates AWS Route53 for name-based bootstrap/discovery.
-- **Koorde nodes (Docker containers)**: run the same Koorde node binary used in EKS.
-- **Local HTTP entrypoint / load balancer**: Nginx (or a simple HTTP frontend) on your machine:
+- **DHT nodes (Docker containers)**: run the Koorde or Chord node binary.
+- **Local HTTP entrypoint / load balancer**: Nginx on your machine:
   - Exposes a single HTTP endpoint on `http://localhost:9000`.
-  - Proxies requests to the Koorde nodes’ `/cache`, `/metrics`, `/health` endpoints.
+  - Proxies requests to the DHT nodes' `/cache`, `/metrics`, `/health` endpoints.
 
 This lets you:
 
-- Develop and debug Koorde locally against an AWS-like control-plane (Route53) without real AWS.
-- Run **Locust** or other load tests against `http://localhost:9000` and compare directly with the EKS load balancer URL.
+- Develop and debug locally against an AWS-like control-plane (Route53) without real AWS.
+- Run **Locust** or other load tests against `http://localhost:9000`.
+- **Compare Koorde vs Chord** performance by running experiments with each protocol.
 
 For the true EKS deployment (Kubernetes, NLB/ALB, HPA, etc.), use `deploy/eks/README.md`.
 
@@ -33,88 +34,181 @@ For the true EKS deployment (Kubernetes, NLB/ALB, HPA, etc.), use `deploy/eks/RE
 - AWS CLI (v2 recommended)
 - `awslocal` (optional, wrapper for AWS CLI)
 - `jq` (optional, for JSON processing)
+- PowerShell (for Windows; also works on Linux/Mac via `pwsh`)
 
 > You do **not** need a real AWS account for this setup – LocalStack runs everything locally.
 
 ---
 
-## How to Start LocalStack Koorde Cluster
+## Quick Start
 
-1. **Start the environment**
+### Start a Koorde Cluster (Default)
 
-   **On Linux/Mac:**
+**On Windows (PowerShell):**
 
-   ```bash
-   cd deploy/localstack
-   chmod +x start.sh
-   ./start.sh
-   ```
+```powershell
+cd deploy\localstack
+.\start.ps1
+```
 
-   **On Windows (PowerShell):**
+**On Linux/Mac:**
 
-   ```powershell
-   cd deploy\localstack
-   .\start.ps1
-   ```
+```bash
+cd deploy/localstack
+chmod +x start.sh
+./start.sh
+```
 
-   The start script will:
+### Start a Chord Cluster
 
-   - Start LocalStack with `docker-compose.yml`.
-   - Create a Route53 hosted zone (e.g., `dht.local`) inside LocalStack.
-   - Inject the hosted zone ID into the Koorde containers.
-   - Start **3 Koorde nodes** configured to use LocalStack for bootstrap/discovery.
-   - Start the local HTTP entrypoint (Nginx) on `http://localhost:9000`.
+**On Windows (PowerShell):**
 
-2. **Verify the deployment**
+```powershell
+.\start.ps1 -Protocol chord
+```
 
-   **Via the HTTP entrypoint (recommended for fair comparison with AWS EKS):**
+**On Linux/Mac:**
 
-   ```bash
-   # Cache request
-   curl "http://localhost:9000/cache?url=https://httpbin.org/json"
+```bash
+./start.sh chord
+```
 
-   # Metrics
-   curl "http://localhost:9000/metrics"
+---
 
-   # Health
-   curl "http://localhost:9000/health"
-   ```
+## Protocol Comparison Experiments
 
-   **Directly against individual nodes (debugging only):**
+You can run sequential experiments comparing **Koorde** and **Chord** performance:
 
-   ```bash
-   curl http://localhost:8080/health  # Node 0
-   curl http://localhost:8081/health  # Node 1
-   curl http://localhost:8082/health  # Node 2
-   ```
+### Step 1: Run Koorde Experiment
 
-3. **Stop the environment**
+```powershell
+# Start Koorde cluster
+.\start.ps1 -Protocol koorde -Nodes 16 -Degree 4
 
-   From `deploy/localstack`:
+# Run your benchmark/load test
+# e.g., locust -f test/locustfile.py --host=http://localhost:9000
 
-   ```bash
-   docker-compose down
-   ```
+# Collect results...
+
+# Stop the cluster
+docker-compose down
+```
+
+### Step 2: Run Chord Experiment
+
+```powershell
+# Start Chord cluster (same number of nodes for fair comparison)
+.\start.ps1 -Protocol chord -Nodes 16 -Degree 4
+
+# Run the same benchmark/load test
+# e.g., locust -f test/locustfile.py --host=http://localhost:9000
+
+# Collect results...
+
+# Stop the cluster
+docker-compose down
+```
+
+### Parameters
+
+| Parameter | PowerShell | Bash | Default | Description |
+|-----------|------------|------|---------|-------------|
+| Protocol | `-Protocol` | 1st arg | `koorde` | DHT protocol: `koorde` or `chord` |
+| Nodes | `-Nodes` | 2nd arg | `16` | Number of DHT nodes |
+| Degree | `-Degree` | 3rd arg | `4` | De Bruijn degree (for Koorde) |
+
+**Examples:**
+
+```powershell
+# PowerShell: 8 Koorde nodes with degree 2
+.\start.ps1 -Protocol koorde -Nodes 8 -Degree 2
+
+# PowerShell: 32 Chord nodes
+.\start.ps1 -Protocol chord -Nodes 32
+```
+
+```bash
+# Bash: 8 Koorde nodes with degree 2
+./start.sh koorde 8 2
+
+# Bash: 32 Chord nodes
+./start.sh chord 32
+```
+
+---
+
+## Verify Deployment
+
+**Via the HTTP entrypoint (recommended):**
+
+```bash
+# Cache request
+curl "http://localhost:9000/cache?url=https://httpbin.org/json"
+
+# Metrics
+curl "http://localhost:9000/metrics"
+
+# Health
+curl "http://localhost:9000/health"
+```
+
+**Directly against individual nodes (debugging only):**
+
+```bash
+curl http://localhost:8080/health  # Node 0
+curl http://localhost:8081/health  # Node 1
+curl http://localhost:8082/health  # Node 2
+```
+
+---
+
+## Stop the Environment
+
+From `deploy/localstack`:
+
+```bash
+docker-compose down
+```
+
+To clean up volumes as well:
+
+```bash
+docker-compose down -v
+```
 
 ---
 
 ## Configuration Overview
 
-The core of this setup is `docker-compose.yml` and `nginx.conf`:
+### Generated Files
 
-- **`docker-compose.yml`**:
+The `generate-docker-compose.ps1` script creates:
 
-  - Defines:
-    - `localstack` container (simulated AWS services, especially Route53).
-    - Multiple `koorde-node-*` containers running the Koorde binary.
-    - An `nginx` container exposing `http://localhost:9000` and proxying to the nodes.
-  - Important environment variables for the nodes:
-    - `BOOTSTRAP_MODE=route53`: enables Route53-based bootstrap (mirrors EKS Route53 mode).
-    - `ROUTE53_ENDPOINT=http://localstack:4566`: points to LocalStack instead of real AWS.
-    - `ROUTE53_ZONE_ID`: injected by `start.sh` / `start.ps1` after creating the hosted zone.
+- **`docker-compose.yml`**: Defines all services (LocalStack, nginx, DHT nodes)
+- **`nginx.conf`**: Load balancer configuration
 
-- **`nginx.conf`**:
-  - Defines how Nginx balances requests across Koorde HTTP endpoints.
-  - Provides a single, stable URL (`http://localhost:9000`) similar to the EKS NLB DNS name.
+### Key Environment Variables
 
-> For detailed description of Koorde internals (DHT routing, cache behavior, metrics), see the main project README and `deploy/eks/README.md`.
+Each DHT node receives:
+
+| Variable | Description |
+|----------|-------------|
+| `DHT_PROTOCOL` | `koorde` or `chord` - selects the DHT implementation |
+| `NODE_ID` | Unique hex identifier for the node |
+| `NODE_HOST` | Container hostname (e.g., `koorde-node-0`) |
+| `NODE_PORT` | gRPC port (4000, 4001, ...) |
+| `CACHE_HTTP_PORT` | HTTP port (8080, 8081, ...) |
+| `BOOTSTRAP_MODE` | `route53` - uses LocalStack Route53 for discovery |
+| `ROUTE53_ENDPOINT` | `http://localstack:4566` - LocalStack endpoint |
+| `DEBRUIJN_DEGREE` | De Bruijn graph degree (Koorde-specific) |
+
+### Manual Configuration Generation
+
+You can regenerate configuration without starting:
+
+```powershell
+# Generate for Chord with 8 nodes
+.\generate-docker-compose.ps1 -Protocol chord -Nodes 8 -Degree 2
+```
+
+> For detailed description of DHT internals (routing, cache behavior, metrics), see the main project README and `deploy/eks/README.md`.

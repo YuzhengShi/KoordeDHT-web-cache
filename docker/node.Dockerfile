@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/
 COPY --from=builder /koorde-node /usr/local/bin/koorde
 COPY config/node/config.yaml /etc/koorde/config.yaml
 COPY deploy/eks/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Fix Windows CRLF line endings and make executable
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh", "/usr/local/bin/koorde", "-config", "/etc/koorde/config.yaml"]

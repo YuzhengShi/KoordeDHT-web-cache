@@ -1,8 +1,19 @@
+param(
+    [ValidateSet("koorde", "chord")]
+    [string]$Protocol = "koorde",
+    [int]$Nodes = 16,
+    [int]$Degree = 4
+)
+
 $ErrorActionPreference = "Stop"
 
 Write-Host "============================================" -ForegroundColor Cyan
-Write-Host "  Starting LocalStack Deployment" -ForegroundColor Cyan
+Write-Host "  Starting LocalStack Deployment ($Protocol)" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
+
+# Generate docker-compose.yml and nginx.conf for the selected protocol
+Write-Host "[0/4] Generating configuration for $Protocol..." -ForegroundColor Green
+& "$PSScriptRoot\generate-docker-compose.ps1" -Protocol $Protocol -Nodes $Nodes -Degree $Degree
 
 # Check for awslocal or aws
 if (Get-Command awslocal -ErrorAction SilentlyContinue) {
@@ -45,11 +56,14 @@ $zones = Invoke-Expression "$AWS_CMD route53 list-hosted-zones" | ConvertFrom-Js
 $ZONE_ID = ($zones.HostedZones | Where-Object { $_.Name -eq "dht.local." }).Id.Split("/")[-1]
 Write-Host "Zone ID: $ZONE_ID" -ForegroundColor Cyan
 
-Write-Host "[3/4] Starting Koorde Nodes with Zone ID: $ZONE_ID..." -ForegroundColor Green
+Write-Host "[3/4] Starting $Protocol nodes with Zone ID: $ZONE_ID..." -ForegroundColor Green
 $env:ROUTE53_ZONE_ID = $ZONE_ID
 docker-compose up -d --build
 
 Write-Host "[4/4] Deployment Complete!" -ForegroundColor Green
+Write-Host ""
+Write-Host "Protocol: $Protocol" -ForegroundColor Cyan
+Write-Host "Nodes: $Nodes" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Load Balancer:" -ForegroundColor Cyan
 Write-Host "  http://localhost:9000 (nginx - distributes across all nodes)"
@@ -58,8 +72,13 @@ Write-Host "Individual Nodes:" -ForegroundColor Cyan
 Write-Host "  Node 0: HTTP 8080, gRPC 4000"
 Write-Host "  Node 1: HTTP 8081, gRPC 4001"
 Write-Host "  Node 2: HTTP 8082, gRPC 4002"
+Write-Host "  ..."
 Write-Host ""
 Write-Host "Verify with:"
 Write-Host "  curl http://localhost:9000/health  # Via load balancer"
 Write-Host "  curl http://localhost:8080/health  # Direct to node 0"
+Write-Host ""
+Write-Host "To switch protocols:"
+Write-Host "  docker-compose down"
+Write-Host "  .\start.ps1 -Protocol chord  # or koorde"
 Write-Host ""
