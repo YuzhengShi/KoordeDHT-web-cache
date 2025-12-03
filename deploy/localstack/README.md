@@ -10,6 +10,9 @@ It mirrors the **AWS EKS architecture** described in `deploy/eks/README.md`, but
 
 ## Architecture Overview
 
+
+<img width="749" height="625" alt="image" src="https://github.com/user-attachments/assets/3dddbef6-3705-461a-8c6f-a5942ba113e4" />
+
 Conceptually, this LocalStack setup matches the EKS architecture:
 
 - **LocalStack (Route53 emulation)**: simulates AWS Route53 for name-based bootstrap/discovery.
