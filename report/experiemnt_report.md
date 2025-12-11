@@ -1,22 +1,87 @@
-## Experiment Report
+# Koorde vs Chord DHT Performance Benchmark Report
 
-### Table of contents
-
-- [Experiment 2: Cache Hit Rate Under 3-Phase Node Churn (4 → 3 → 4)](#experiment-2-cache-hit-rate-under-3-phase-node-churn-4--3--4)
-
+## Table of Contents
+- [Experiment 1: Latency Scaling (Koorde vs Chord)](#experiment-1-latency-scaling-koorde-vs-chord)
+- [Experiment 2: Cache Hit Rate Under 3-Phase Node Churn](#experiment-2-cache-hit-rate-under-3-phase-node-churn-4--3--4)
 - [Experiment 3: Throughput Benchmark (Koorde vs Chord)](#experiment-3-throughput-benchmark-koorde-vs-chord)
+
+---
+
+## Experiment 1: Latency Scaling (Koorde vs Chord)
+
+### Experiment Introduction
+This experiment empirically compares the latency characteristics of **Chord** and **Koorde** as the cluster size scales from 8 to 32 nodes. It aims to validate whether Koorde's theoretical routing efficiency ($O(\frac{\log N}{\log \log N})$) translates to lower latency in a realistic cloud environment (AWS EKS) compared to Chord ($O(\log N)$).
+
+### Methodology
+- **Tooling:** [Locust](https://locust.io/) was used for distributed load generation.
+- **Workload:** 50 concurrent users generating requests with a **Zipfian distribution** (alpha=1.2) to simulate realistic content popularity (hot keys).
+- **Traffic:** Mixed workload of `/cache` (DHT lookups) and `/health` checks, but analysis focuses on `/cache` endpoints.
+- **Environment:** AWS EKS (us-west-2) with a local in-cluster Nginx origin to isolate DHT routing latency from external network noise.
+
+### Experiment Settings
+| Parameter | Value |
+|-----------|-------|
+| **Environment** | AWS EKS (us-west-2) |
+| **Cluster Sizes** | 8, 16, 20, 26, 32 nodes |
+| **Protocols** | Chord, Koorde (k=2, 4, 8) |
+| **Workload** | 50 concurrent users, Zipfian distribution |
+| **Origin** | Local in-cluster Nginx (to isolate routing latency) |
+
+### Data (Results)
+
+#### Summary of Average Latency
+| Nodes | Protocol | Degree (k) | Avg Latency (ms) |
+|-------|----------|------------|------------------|
+| 8     | Chord    | N/A        | 18.8             |
+| 8     | Koorde   | 2          | 25.5             |
+| 8     | Koorde   | 8          | 24.8             |
+| 16    | Chord    | N/A        | 18.8             |
+| 16    | Koorde   | 2          | 37.4             |
+| 32    | Chord    | N/A        | 19.4             |
+| 32    | Koorde   | 2          | 54.9             |
+| 32    | Koorde   | 8          | 50.3             |
+
+#### Detailed Latency Distribution (32 Nodes)
+A deeper look at the tail latency reveals significant differences in stability.
+
+| Metric | Chord | Koorde (k=2) | Koorde (k=8) | Comparison |
+|--------|-------|--------------|--------------|------------|
+| **Median (P50)** | **19 ms** | 46 ms | 39 ms | Chord is ~2x faster |
+| **Average** | **19.7 ms** | 60.5 ms | 54.5 ms | Chord is ~2.7x faster |
+| **P95 Latency** | **25 ms** | 140 ms | 160 ms | Chord is **5.6x more stable** |
+| **P99 Latency** | **37 ms** | 190 ms | 240 ms | Koorde has high tail latency |
+| **Max Latency** | **96 ms** | 510 ms | 550 ms | - |
+
+*(Note: Throughput comparison is omitted for this specific experiment as tests were conducted in different network environments.)*
+
+### Visualizations
+**Figure 1: Average Latency vs. Node Count**
+![Latency vs Nodes](latency_vs_nodes.png)
+*Comparison of Chord baseline against Koorde with varying degrees.*
+
+### Analysis & Conclusions
+
+#### 1. Chord Dominance & Stability
+Chord consistently outperformed Koorde across all cluster sizes (8-32 nodes), maintaining a remarkably flat latency profile (~19ms avg, 25ms P95). The tight bound between P50 (19ms) and P99 (37ms) indicates that Chord's finger table implementation is highly efficient and predictable at this scale. The $O(\log N)$ hops in a 32-node cluster are few enough that the overhead is negligible.
+
+#### 2. Koorde Scaling & Tail Latency
+Koorde showed a clear increase in latency as nodes were added (25ms $\to$ 55ms). More critically, the **tail latency (P95/P99)** for Koorde is significantly higher (140ms+) than Chord. This suggests that while some lookups are fast, a significant portion of requests in Koorde suffer from longer routing paths or processing overheads. This could be due to the complexity of de Bruijn graph traversal or "imaginary node" calculations in a real distributed setting.
+
+#### 3. Impact of Degree (k) - Theory vs Practice
+The theory that higher degree reduces path length was **validated** in the average case. At 32 nodes, Koorde with $k=8$ (Avg 50.3ms) was faster than $k=2$ (Avg 54.9ms), confirming that increasing the de Bruijn degree reduces network diameter. However, the **P95 latency** for $k=8$ was actually slightly worse (160ms vs 140ms), suggesting that the complexity of managing more neighbors or routing logic might introduce variance that affects tail latency.
+
+#### 4. Theoretical vs Practical Gap
+While Koorde has a superior asymptotic bound ($O(\frac{\log N}{\log \log N})$), the constant factors in implementation and network RTT dominate at the scale of 32 nodes. Chord's simpler logic and efficient pointer chasing proved superior in this specific AWS EKS environment. Koorde's benefits might only become apparent at much larger scales (e.g., thousands of nodes) where the logarithmic difference in hop count becomes significant enough to outweigh the per-hop overhead.
 
 ---
 
 ## Experiment 2: Cache Hit Rate Under 3-Phase Node Churn (4 → 3 → 4)
 
-### Experiment introduction
-
+### Experiment Introduction
 This experiment evaluates **cache hit rate** stability under **node churn** for three routing strategies:
 **Simple Hash** (static modulo), **Chord**, and **Koorde** (consistent hashing).
 
-### Experiment settings
-
+### Experiment Settings
 | Parameter              | Value                                    |
 | ---------------------- | ---------------------------------------- |
 | **Node churn pattern** | 4 → 3 → 4 (remove 1 node, then add back) |
@@ -27,95 +92,63 @@ This experiment evaluates **cache hit rate** stability under **node churn** for 
 | **Zipf alpha**         | 1.2                                      |
 | **Koorde degree**      | 4                                        |
 
-### Data (results)
+### Data (Results)
 
-### Final ranking (hit rate)
-
+#### Final Ranking (Hit Rate)
 | Rank    | Protocol        | Avg Hit Rate | Failures | Key Redistribution | Verdict                    |
 | ------- | --------------- | ------------ | -------- | ------------------ | -------------------------- |
 | **1st** | **Chord**       | **38.2%**    | 0        | ~25%               | BEST - consistent hashing  |
 | **2nd** | **Koorde**      | **35.3%**    | 0        | ~25%               | Great - consistent hashing |
 | **3rd** | **Simple Hash** | **19.0%**    | 0        | ~75%               | WORST - key redistribution |
 
-### Cache hit rate progression
-
+#### Cache Hit Rate Progression
 ![Hit Rate Comparison](hit_rate_comparison.png)
 
 - **Chord** highest hit rate (consistent hashing preserves cache).
 - **Koorde** close behind (consistent hashing preserves cache).
 - **Simple Hash** lowest (major remapping on churn).
 
-### Observed hit rate by phase
-
+#### Observed Hit Rate by Phase
 | Protocol    | Phase 1 | Phase 2 | Phase 3 | Explanation                                |
 | ----------- | ------- | ------- | ------- | ------------------------------------------ |
 | Simple Hash | 19.7%   | 16.3%   | 21.0%   | Lowest - ~75% cache invalidated each phase |
 | Chord       | 33.3%   | 46.7%   | 34.7%   | Highest - ~75% cache preserved             |
 | Koorde      | 31.7%   | 41.3%   | 33.0%   | Good - ~75% cache preserved                |
 
-### Why Chord/Koorde improve in Phase 2 (short)
-
-1. Cache already warmed in Phase 1
-2. ~75% of cached data preserved (consistent hashing)
-3. Fewer nodes (3) means each node handles more popular URLs
-4. Popular URLs (Zipf distribution) are more likely to hit cache
-
-### Conclusions
-
-- **Chord**: best hit rate under churn (cache preserved via consistent hashing).
-- **Koorde**: close to Chord; also preserves cache via consistent hashing.
-- **Simple Hash**: lowest hit rate because `hash % N` remaps most keys when N changes.
-
-### Recommendation
-
-| Use Case                         | Recommended Protocol                              |
-| -------------------------------- | ------------------------------------------------- |
-| **Production web cache**         | **Chord** (best hit rate) or Koorde               |
-| **Latency-critical systems**     | Koorde (slightly lower latency)                   |
-| **Simple implementation needed** | Chord (simpler than Koorde)                       |
-| **Static cluster, no churn**     | Simple Hash (acceptable)                          |
-| **Dynamic cluster with churn**   | **Chord or Koorde** (consistent hashing required) |
-
-### Key takeaway
-
-> **Consistent hashing (Chord/Koorde) preserves ~75% of cached data during node changes, while simple modulo hashing invalidates ~75% of the cache.**
-
-This is why Simple Hash has the **lowest hit rate** despite being functionally correct.
-
-### Analysis
-
-| Metric                     | Simple Hash | Chord     | Koorde |
-| -------------------------- | ----------- | --------- | ------ |
-| **Avg Hit Rate**           | 19.0%       | **38.2%** | 35.3%  |
-| **Keys remapped on churn** | ~75%        | ~25%      | ~25%   |
-| **Cache preserved**        | ~25%        | ~75%      | ~75%   |
-| **P99 Latency (Phase 1)**  | 72.5ms      | 41.4ms    | 47.5ms |
-
-- **Why Simple Hash is lowest**: when node count changes, `hash % N` changes for most keys (≈ 75% when \(N=4\)), so requests get routed to different nodes and miss previously warmed caches.
-- **Why Chord/Koorde are higher**: consistent hashing moves only the affected key ranges (≈ 25% when \(N=4\)), preserving most cached entries across churn.
+### Analysis & Conclusions
+- **Consistent Hashing Wins:** Both Chord and Koorde preserved ~75% of the cache during churn, leading to significantly higher hit rates than Simple Hash.
+- **Simple Hash Failure:** Simple Hash invalidated ~75% of keys with every topology change, making it unsuitable for dynamic environments.
+- **Recommendation:** For dynamic clusters, **Chord or Koorde** is required. Simple Hash is only acceptable for static clusters.
 
 ---
 
 ## Experiment 3: Throughput Benchmark (Koorde vs Chord)
 
 ### Summary
-
 This experiment compares how Koorde and Chord scale under increasing concurrent load.
 
 ### Setup
-
 - **Users tested**: 50, 100, 200, 500, 1000, 2000, 4000
 - **Metric**: throughput (Requests Per Second, RPS)
 - **Conditions**: Koorde and Chord run under identical conditions
 - **Note**: X-axis is equally spaced for clarity and does not represent actual numeric spacing between user counts
 
-### Key observations
-
+### Key Observations
 - **Chord** achieves significantly higher throughput, saturating around ~3000 RPS.
 - **Koorde** saturates earlier (~2200 RPS) and declines at high load (4000 users).
 - **Chord** demonstrates better stability and scalability under high concurrency.
 - **Koorde** shows more sensitivity to overload conditions.
 
 ### Chart
-
 ![Throughput Comparison](throughput.png)
+
+---
+
+## Final Conclusion
+
+Across all three experiments, **Chord** demonstrated superior performance and stability in this implementation:
+1.  **Latency:** Chord maintained lower, flatter latency as the cluster scaled.
+2.  **Stability:** Chord handled node churn with the highest cache hit rate.
+3.  **Throughput:** Chord sustained higher RPS loads before saturation.
+
+**Koorde** validated its theoretical properties (higher degree = lower latency) and performed well in churn (consistent hashing), but its implementation overhead appears higher than Chord's at these scales (up to 32 nodes). For production use at this scale, **Chord** is the recommended protocol.
