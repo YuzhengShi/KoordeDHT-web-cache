@@ -1,0 +1,35 @@
+{
+  "family": "locust-worker",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["EC2"],
+  "executionRoleArn": "arn:aws:iam::149740719999:role/LabRole",
+  "taskRoleArn": "arn:aws:iam::149740719999:role/LabRole",
+  "cpu": "1024",
+  "memory": "2048",
+  "containerDefinitions": [
+    {
+      "name": "locust-worker",
+      "image": "149740719999.dkr.ecr.us-west-2.amazonaws.com/locust-dht:latest",
+      "essential": true,
+      "command": [
+        "-f", "/mnt/locust/locustfile.py",
+        "--worker",
+        "--master-host", "MASTER_IP_PLACEHOLDER"
+      ],
+      "environment": [
+        {"name": "PROTOCOL", "value": "DHT"},
+        {"name": "URL_POOL_SIZE", "value": "100"}
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/locust-dht",
+          "awslogs-region": "us-west-2",
+          "awslogs-stream-prefix": "worker",
+          "awslogs-create-group": "true"
+        }
+      }
+    }
+  ]
+}
+

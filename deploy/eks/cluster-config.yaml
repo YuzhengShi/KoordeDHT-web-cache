@@ -7,7 +7,7 @@ metadata:
 
 # Use existing LabRole (required for AWS Learner Lab)
 iam:
-  serviceRoleARN: arn:aws:iam::849778011007:role/LabRole
+  serviceRoleARN: arn:aws:iam::149740719999:role/LabRole
   withOIDC: false
 
 managedNodeGroups:
@@ -18,4 +18,4 @@ managedNodeGroups:
     desiredCapacity: 36
     volumeSize: 20
     iam:
-      instanceRoleARN: arn:aws:iam::849778011007:role/LabRole
+      instanceRoleARN: arn:aws:iam::149740719999:role/LabRole

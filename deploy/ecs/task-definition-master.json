@@ -1,0 +1,46 @@
+{
+  "family": "locust-master",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["EC2"],
+  "executionRoleArn": "arn:aws:iam::149740719999:role/LabRole",
+  "taskRoleArn": "arn:aws:iam::149740719999:role/LabRole",
+  "cpu": "1024",
+  "memory": "2048",
+  "containerDefinitions": [
+    {
+      "name": "locust-master",
+      "image": "149740719999.dkr.ecr.us-west-2.amazonaws.com/locust-dht:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8089,
+          "hostPort": 8089,
+          "protocol": "tcp"
+        },
+        {
+          "containerPort": 5557,
+          "hostPort": 5557,
+          "protocol": "tcp"
+        }
+      ],
+      "command": [
+        "-f", "/mnt/locust/locustfile.py",
+        "--master"
+      ],
+      "environment": [
+        {"name": "PROTOCOL", "value": "DHT"},
+        {"name": "URL_POOL_SIZE", "value": "100"}
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/locust-dht",
+          "awslogs-region": "us-west-2",
+          "awslogs-stream-prefix": "master",
+          "awslogs-create-group": "true"
+        }
+      }
+    }
+  ]
+}
+

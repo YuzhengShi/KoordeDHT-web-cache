@@ -1,26 +1,6 @@
 """
 Locust Throughput Test for Koorde/Chord DHT Web Cache.
-
-Tests maximum requests per second (RPS) against a DHT cache endpoint.
-
-Usage:
-    # Test with URL input
-    locust -f locustfile.py --host http://<load-balancer-url>
-
-    # Headless mode with specific RPS targets
-    locust -f locustfile.py --host http://<lb-url> --users 50 --spawn-rate 10 --run-time 3m --headless
-
-    # Examples:
-    # ~50 RPS:   --users 50 --spawn-rate 10
-    # ~100 RPS:  --users 100 --spawn-rate 20
-    # ~200 RPS:  --users 200 --spawn-rate 40
-    # ~500 RPS:  --users 500 --spawn-rate 100
-    # ~1000 RPS: --users 1000 --spawn-rate 200
-
-RPS Calculation:
-    RPS ≈ users / avg_wait_time
-    With wait_time = 0.1s, 100 users → ~1000 RPS theoretical max
-    Actual RPS depends on server response time.
+Designed for distributed testing on AWS ECS.
 """
 
 import os
@@ -30,14 +10,14 @@ import json
 from datetime import datetime
 from locust import HttpUser, task, between, events
 
-# Configuration
+# Configuration from environment
 URL_POOL_SIZE = int(os.environ.get("URL_POOL_SIZE", "100"))
 PROTOCOL_NAME = os.environ.get("PROTOCOL", "DHT").upper()
 
 # Test URLs using httpbin.org
 ENDPOINTS = [
     "/json",
-    "/html", 
+    "/html",
     "/uuid",
     "/headers",
     "/bytes/1024",
@@ -57,7 +37,7 @@ def zipf_weights(n, alpha=1.2):
 WEIGHTS = zipf_weights(len(url_pool))
 
 
-# Statistics
+# Statistics tracking
 class Stats:
     def __init__(self):
         self.reset()
@@ -100,7 +80,7 @@ class ThroughputUser(HttpUser):
     Minimal wait time to maximize requests per second.
     """
     
-    # ~10 requests/second per user (adjust for target RPS)
+    # ~10 requests/second per user
     wait_time = between(0.05, 0.15)
     
     def _get_url(self):
@@ -137,7 +117,7 @@ class ThroughputUser(HttpUser):
 def on_start(environment, **kwargs):
     stats.reset()
     print("\n" + "=" * 60)
-    print(f" {PROTOCOL_NAME} THROUGHPUT TEST")
+    print(f" {PROTOCOL_NAME} THROUGHPUT TEST (ECS)")
     print("=" * 60)
     print(f" Target: {environment.host}")
     print(f" URL Pool: {URL_POOL_SIZE} URLs")
@@ -145,7 +125,7 @@ def on_start(environment, **kwargs):
     print("=" * 60 + "\n")
 
 
-@events.test_stop.add_listener  
+@events.test_stop.add_listener
 def on_stop(environment, **kwargs):
     elapsed = time.time() - stats.start_time
     
@@ -169,11 +149,5 @@ def on_stop(environment, **kwargs):
     print(f" Throughput:   {result['throughput_rps']} RPS")
     print(f" Hit Rate:     {result['cache_hit_rate']}%")
     print(f" Errors:       {result['errors']}")
-    print("=" * 60)
-    
-    # Save JSON result
-    filename = f"throughput-{PROTOCOL_NAME.lower()}-{datetime.now().strftime('%Y%m%d-%H%M%S')}.json"
-    with open(filename, "w") as f:
-        json.dump(result, f, indent=2)
-    print(f" Saved: {filename}")
     print("=" * 60 + "\n")
+
