@@ -1,0 +1,48 @@
+﻿logger:
+  active: true
+  level: info
+  encoding: console
+  mode: stdout
+
+node:
+  bind: "0.0.0.0"
+  host: "localhost"
+  port: 4003
+
+dht:
+  idBits: 66
+  protocol: simple
+  mode: private
+  
+  # Full cluster membership for simple hash routing
+  clusterNodes: ["localhost:4000", "localhost:4001", "localhost:4002", "localhost:4003"]
+  
+  bootstrap:
+    mode: static
+    peers: []
+  
+  # These settings are not used by simple hash but required for config validation
+  deBruijn:
+    degree: 2
+    fixInterval: 5s
+  
+  faultTolerance:
+    successorListSize: 4
+    stabilizationInterval: 10s
+    failureTimeout: 1s
+    simulatedLatency: 0ms
+
+  storage:
+    fixInterval: 20s
+
+cache:
+  enabled: true
+  httpPort: 8083
+  capacityMB: 256
+  defaultTTL: 3600
+  hotspotThreshold: 10.0
+  hotspotDecayRate: 0.65
+
+telemetry:
+  tracing:
+    enabled: false

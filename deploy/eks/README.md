@@ -35,9 +35,74 @@ StatefulSet with persistent identity
 
 ## Prerequisites
 
-### AWS Learner Lab Setup (us-west-2)
+### Option A: AWS Sandbox Setup (Recommended)
+
+Use this option if you have access to an AWS Sandbox with AdministratorAccess (e.g., via AWS SSO).
+
+1. **Login to AWS via SSO**
+
+   ```bash
+   # Configure SSO (first time only)
+   aws configure sso
+
+   # Or login if already configured
+   aws sso login --profile your-profile
+   ```
+
+2. **Verify your credentials**
+
+   ```bash
+   aws sts get-caller-identity
+   # Should show your account ID (e.g., 907519272267)
+   ```
+
+3. **Set the region**
+
+   ```bash
+   aws configure set region us-west-2
+   ```
+
+4. **Create EKS Cluster**
+
+   With AdministratorAccess, eksctl will automatically create the required IAM roles.
+
+   ```bash
+   eksctl create cluster -f deploy/eks/cluster-config.yaml
+   ```
+
+   This will take ~15-20 minutes.
+
+5. **Configure kubectl**
+
+   ```bash
+   aws eks update-kubeconfig --name koorde-cache --region us-west-2
+   ```
+
+6. **Install Load Balancer Controller**
+
+   ```bash
+   # Add Helm repo
+   helm repo add eks https://aws.github.io/eks-charts
+   helm repo update
+
+   # Install Controller with auto-created service account
+   helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+     -n kube-system \
+     --set clusterName=koorde-cache \
+     --set serviceAccount.create=true \
+     --set serviceAccount.name=aws-load-balancer-controller
+   ```
+
+---
+
+### Option B: AWS Learner Lab Setup (us-west-2)
+
+Use this option for AWS Academy Learner Lab environments with restricted IAM permissions.
+
+> **Note:** Learner Lab sessions expire after 4 hours. Always clean up resources before the session expires.
 
 1. **Login to AWS Learner Lab**
+
    - Go to your learning platform and start the AWS Learner Lab.
    - Click **AWS Details** to see your credentials.
    - Click **Show** next to "AWS CLI".
@@ -45,6 +110,7 @@ StatefulSet with persistent identity
    > **Tip:** For a clean setup, see our [Virtual Environment Setup Guide](SETUP_VENV.md) to install tools in an isolated environment.
 
 2. **Configure AWS CLI**
+
    - Copy the text from the "AWS CLI" box.
    - Paste it into your `~/.aws/credentials` file (or run `aws configure`).
    - Ensure your region is set to `us-west-2`.
@@ -54,28 +120,54 @@ StatefulSet with persistent identity
    ```
 
 3. **Create EKS Cluster**
-   - Use `eksctl` to create the cluster. This will take ~15-20 minutes.
-   
+
+   For Learner Lab, you need to use a modified cluster config with the pre-existing `LabRole`:
+
+   ```yaml
+   # cluster-config-learnerlab.yaml
+   apiVersion: eksctl.io/v1alpha5
+   kind: ClusterConfig
+
+   metadata:
+     name: koorde-cache
+     region: us-west-2
+
+   iam:
+     serviceRoleARN: arn:aws:iam::<LEARNER_LAB_ACCOUNT_ID>:role/LabRole
+     withOIDC: false
+
+   managedNodeGroups:
+     - name: standard-workers
+       instanceType: t3.medium
+       minSize: 3
+       maxSize: 6
+       desiredCapacity: 3
+       volumeSize: 20
+       iam:
+         instanceRoleARN: arn:aws:iam::<LEARNER_LAB_ACCOUNT_ID>:role/LabRole
+   ```
+
+   Replace `<LEARNER_LAB_ACCOUNT_ID>` with your Learner Lab account ID, then:
+
    ```bash
-   eksctl create cluster -f deploy/eks/cluster-config.yaml
-   
+   eksctl create cluster -f cluster-config-learnerlab.yaml
    ```
 
 4. **Configure kubectl**
-   - Once the cluster is ready, update your kubeconfig:
-   
+
    ```bash
    aws eks update-kubeconfig --name koorde-cache --region us-west-2
    ```
 
 5. **Install Load Balancer Controller (Required for External Access)**
-   - **Note for Learner Lab:** You might need to use the existing `LabRole` if you lack permissions to create new IAM roles. However, standard installation often works if you have `AdministratorAccess` (which Learner Lab usually provides).
+
+   For Learner Lab, use the default service account (LabRole provides the permissions):
 
    ```bash
    # Add Helm repo
    helm repo add eks https://aws.github.io/eks-charts
    helm repo update
-   
+
    # Install Controller
    helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
      -n kube-system \
@@ -83,7 +175,6 @@ StatefulSet with persistent identity
      --set serviceAccount.create=false \
      --set serviceAccount.name=default
    ```
-   *(Note: In a production environment, you would use IRSA (IAM Roles for Service Accounts), but for Learner Lab, using the default node role is often easier if IRSA setup is restricted.)*
 
 ---
 
@@ -100,6 +191,7 @@ cd deploy/eks
 ```
 
 This script will:
+
 1. Create an ECR repository (if it doesn't exist)
 2. Authenticate Docker to ECR
 3. Build the Docker image from `docker/node.Dockerfile`
@@ -178,6 +270,7 @@ curl "http://${LB_URL}/metrics" | jq '.routing'
 ```
 
 Expected output shows de Bruijn routing activity:
+
 ```json
 {
   "debruijn_count": 8,
@@ -207,35 +300,35 @@ metadata:
   namespace: koorde-cache
 data:
   # DHT Configuration
-  DHT_MODE: "private"
-  DHT_ID_BITS: "66"
-  DEBRUIJN_DEGREE: "8"
-  SUCCESSOR_LIST_SIZE: "8"
-  STABILIZATION_INTERVAL: "2s"
-  FAILURE_TIMEOUT: "1s"
-  DEBRUIJN_FIX_INTERVAL: "5s"
-  STORAGE_FIX_INTERVAL: "20s"
-  
+  DHT_MODE: 'private'
+  DHT_ID_BITS: '66'
+  DEBRUIJN_DEGREE: '8'
+  SUCCESSOR_LIST_SIZE: '8'
+  STABILIZATION_INTERVAL: '2s'
+  FAILURE_TIMEOUT: '1s'
+  DEBRUIJN_FIX_INTERVAL: '5s'
+  STORAGE_FIX_INTERVAL: '20s'
+
   # Bootstrap Configuration
-  BOOTSTRAP_MODE: "static"
+  BOOTSTRAP_MODE: 'static'
   # Will be dynamically set to list of pod DNS names
-  
+
   # Cache Configuration
-  CACHE_ENABLED: "true"
-  CACHE_HTTP_PORT: "8080"
-  CACHE_CAPACITY_MB: "2048"
-  CACHE_DEFAULT_TTL: "3600"
-  CACHE_HOTSPOT_THRESHOLD: "1000.0"
-  CACHE_HOTSPOT_DECAY: "0.65"
-  
+  CACHE_ENABLED: 'true'
+  CACHE_HTTP_PORT: '8080'
+  CACHE_CAPACITY_MB: '2048'
+  CACHE_DEFAULT_TTL: '3600'
+  CACHE_HOTSPOT_THRESHOLD: '1000.0'
+  CACHE_HOTSPOT_DECAY: '0.65'
+
   # Logging
-  LOGGER_ENABLED: "true"
-  LOGGER_LEVEL: "info"
-  LOGGER_ENCODING: "json"
-  LOGGER_MODE: "stdout"
-  
+  LOGGER_ENABLED: 'true'
+  LOGGER_LEVEL: 'info'
+  LOGGER_ENCODING: 'json'
+  LOGGER_MODE: 'stdout'
+
   # Tracing (optional - enable if using Jaeger)
-  TRACING_ENABLED: "false"
+  TRACING_ENABLED: 'false'
 ```
 
 ### StatefulSet (statefulset.yaml)
@@ -261,54 +354,54 @@ spec:
         app: koorde-node
     spec:
       containers:
-      - name: koorde
-        image: flaviosimonelli/koorde-node:latest
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 4000
-          name: grpc
-          protocol: TCP
-        - containerPort: 8080
-          name: http
-          protocol: TCP
-        env:
-        - name: NODE_BIND
-          value: "0.0.0.0"
-        - name: NODE_PORT
-          value: "4000"
-        - name: NODE_HOST
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        # Bootstrap peers: first 3 pods
-        - name: BOOTSTRAP_PEERS
-          value: "koorde-node-0.koorde-headless.koorde-cache.svc.cluster.local:4000,koorde-node-1.koorde-headless.koorde-cache.svc.cluster.local:4000,koorde-node-2.koorde-headless.koorde-cache.svc.cluster.local:4000"
-        envFrom:
-        - configMapRef:
-            name: koorde-config
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "2Gi"
-            cpu: "1000m"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-          initialDelaySeconds: 15
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 2
+        - name: koorde
+          image: flaviosimonelli/koorde-node:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 4000
+              name: grpc
+              protocol: TCP
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          env:
+            - name: NODE_BIND
+              value: '0.0.0.0'
+            - name: NODE_PORT
+              value: '4000'
+            - name: NODE_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            # Bootstrap peers: first 3 pods
+            - name: BOOTSTRAP_PEERS
+              value: 'koorde-node-0.koorde-headless.koorde-cache.svc.cluster.local:4000,koorde-node-1.koorde-headless.koorde-cache.svc.cluster.local:4000,koorde-node-2.koorde-headless.koorde-cache.svc.cluster.local:4000'
+          envFrom:
+            - configMapRef:
+                name: koorde-config
+          resources:
+            requests:
+              memory: '512Mi'
+              cpu: '250m'
+            limits:
+              memory: '2Gi'
+              cpu: '1000m'
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
 ```
 
 ### Headless Service (service-headless.yaml)
@@ -322,17 +415,18 @@ metadata:
   name: koorde-headless
   namespace: koorde-cache
 spec:
-  clusterIP: None  # Headless service
+  clusterIP: None # Headless service
   selector:
     app: koorde-node
   ports:
-  - name: grpc
-    port: 4000
-    targetPort: 4000
-    protocol: TCP
+    - name: grpc
+      port: 4000
+      targetPort: 4000
+      protocol: TCP
 ```
 
 **Pod DNS names**:
+
 - `koorde-node-0.koorde-headless.koorde-cache.svc.cluster.local`
 - `koorde-node-1.koorde-headless.koorde-cache.svc.cluster.local`
 - etc.
@@ -348,19 +442,19 @@ metadata:
   name: koorde-cache-http
   namespace: koorde-cache
   annotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"  # Network Load Balancer
-    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
-    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
+    service.beta.kubernetes.io/aws-load-balancer-type: 'nlb' # Network Load Balancer
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: 'true'
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: 'http'
 spec:
   type: LoadBalancer
   selector:
     app: koorde-node
   ports:
-  - name: http
-    port: 80
-    targetPort: 8080
-    protocol: TCP
-  sessionAffinity: None  # Round-robin load balancing
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+  sessionAffinity: None # Round-robin load balancing
 ```
 
 **For Application Load Balancer (ALB)**:
@@ -372,17 +466,17 @@ metadata:
   name: koorde-cache-http
   namespace: koorde-cache
   annotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: "external"
-    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
-    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+    service.beta.kubernetes.io/aws-load-balancer-type: 'external'
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: 'ip'
+    service.beta.kubernetes.io/aws-load-balancer-scheme: 'internet-facing'
 spec:
   type: LoadBalancer
   selector:
     app: koorde-node
   ports:
-  - port: 80
-    targetPort: 8080
-    protocol: TCP
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
 ```
 
 ### gRPC Service (service-grpc.yaml)
@@ -396,16 +490,16 @@ metadata:
   name: koorde-grpc
   namespace: koorde-cache
   annotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-type: 'nlb'
 spec:
   type: LoadBalancer
   selector:
     app: koorde-node
   ports:
-  - name: grpc
-    port: 4000
-    targetPort: 4000
-    protocol: TCP
+    - name: grpc
+      port: 4000
+      targetPort: 4000
+      protocol: TCP
 ```
 
 ---
@@ -463,6 +557,7 @@ echo "  curl \"http://${LB_URL}/metrics\" | jq"
 ```
 
 Make it executable:
+
 ```bash
 chmod +x deploy-eks.sh
 ```
@@ -499,34 +594,35 @@ spec:
   minReplicas: 5
   maxReplicas: 50
   metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
   behavior:
     scaleUp:
       stabilizationWindowSeconds: 60
       policies:
-      - type: Percent
-        value: 50
-        periodSeconds: 60
+        - type: Percent
+          value: 50
+          periodSeconds: 60
     scaleDown:
       stabilizationWindowSeconds: 300
       policies:
-      - type: Pods
-        value: 2
-        periodSeconds: 120
+        - type: Pods
+          value: 2
+          periodSeconds: 120
 ```
 
 Apply:
+
 ```bash
 kubectl apply -f hpa.yaml
 ```
@@ -547,25 +643,25 @@ metadata:
   name: koorde-cache-http
   namespace: koorde-cache
   annotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: "external"
-    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
-    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
-    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "http"
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: "/health"
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "10"
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "5"
-    service.beta.kubernetes.io/aws-load-balancer-healthy-threshold: "2"
-    service.beta.kubernetes.io/aws-load-balancer-unhealthy-threshold: "2"
+    service.beta.kubernetes.io/aws-load-balancer-type: 'external'
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: 'ip'
+    service.beta.kubernetes.io/aws-load-balancer-scheme: 'internet-facing'
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: 'true'
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: 'http'
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: '/health'
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: '10'
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: '5'
+    service.beta.kubernetes.io/aws-load-balancer-healthy-threshold: '2'
+    service.beta.kubernetes.io/aws-load-balancer-unhealthy-threshold: '2'
 spec:
   type: LoadBalancer
   selector:
     app: koorde-node
   ports:
-  - name: http
-    port: 80
-    targetPort: 8080
-    protocol: TCP
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
 ```
 
 ### Option 2: Application Load Balancer (ALB) with Ingress
@@ -593,30 +689,30 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-  - host: cache.example.com
-    http:
-      paths:
-      - path: /cache
-        pathType: Prefix
-        backend:
-          service:
-            name: koorde-cache-http-internal
-            port:
-              number: 8080
-      - path: /metrics
-        pathType: Exact
-        backend:
-          service:
-            name: koorde-cache-http-internal
-            port:
-              number: 8080
-      - path: /health
-        pathType: Exact
-        backend:
-          service:
-            name: koorde-cache-http-internal
-            port:
-              number: 8080
+    - host: cache.example.com
+      http:
+        paths:
+          - path: /cache
+            pathType: Prefix
+            backend:
+              service:
+                name: koorde-cache-http-internal
+                port:
+                  number: 8080
+          - path: /metrics
+            pathType: Exact
+            backend:
+              service:
+                name: koorde-cache-http-internal
+                port:
+                  number: 8080
+          - path: /health
+            pathType: Exact
+            backend:
+              service:
+                name: koorde-cache-http-internal
+                port:
+                  number: 8080
 ```
 
 **Internal Service for ALB**:
@@ -633,10 +729,10 @@ spec:
   selector:
     app: koorde-node
   ports:
-  - name: http
-    port: 8080
-    targetPort: 8080
-    protocol: TCP
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
 ```
 
 ---
@@ -657,9 +753,9 @@ spec:
     matchLabels:
       app: koorde-node
   endpoints:
-  - port: http
-    path: /metrics
-    interval: 30s
+    - port: http
+      path: /metrics
+      interval: 30s
 ```
 
 ### CloudWatch Container Insights
@@ -687,12 +783,12 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   tls:
-  - hosts:
-    - cache.example.com
-    secretName: koorde-cache-tls
+    - hosts:
+        - cache.example.com
+      secretName: koorde-cache-tls
   rules:
-  - host: cache.example.com
-    # ... paths
+    - host: cache.example.com
+      # ... paths
 ```
 
 ### 2. Pod Disruption Budget
@@ -722,11 +818,11 @@ metadata:
   namespace: koorde-cache
 spec:
   hard:
-    requests.cpu: "20"
-    requests.memory: "40Gi"
-    limits.cpu: "40"
-    limits.memory: "80Gi"
-    persistentvolumeclaims: "10"
+    requests.cpu: '20'
+    requests.memory: '40Gi'
+    limits.cpu: '40'
+    limits.memory: '80Gi'
+    persistentvolumeclaims: '10'
 ```
 
 ### 4. Network Policies
@@ -744,34 +840,34 @@ spec:
     matchLabels:
       app: koorde-node
   policyTypes:
-  - Ingress
-  - Egress
+    - Ingress
+    - Egress
   ingress:
-  - from:
-    - podSelector:
-        matchLabels:
-          app: koorde-node
-    ports:
-    - protocol: TCP
-      port: 4000  # gRPC
-  - from: []  # Allow all for HTTP cache
-    ports:
-    - protocol: TCP
-      port: 8080
+    - from:
+        - podSelector:
+            matchLabels:
+              app: koorde-node
+      ports:
+        - protocol: TCP
+          port: 4000 # gRPC
+    - from: [] # Allow all for HTTP cache
+      ports:
+        - protocol: TCP
+          port: 8080
   egress:
-  - to:
-    - podSelector:
-        matchLabels:
-          app: koorde-node
-    ports:
-    - protocol: TCP
-      port: 4000
-  - to: []  # Allow all for fetching from origin
-    ports:
-    - protocol: TCP
-      port: 80
-    - protocol: TCP
-      port: 443
+    - to:
+        - podSelector:
+            matchLabels:
+              app: koorde-node
+      ports:
+        - protocol: TCP
+          port: 4000
+    - to: [] # Allow all for fetching from origin
+      ports:
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 443
 ```
 
 ---
@@ -964,6 +1060,7 @@ kubectl annotate serviceaccount cluster-autoscaler \
 ### Reserved Capacity
 
 For production:
+
 ```bash
 eksctl create nodegroup \
   --cluster koorde-cache \
@@ -1085,15 +1182,16 @@ kubectl patch statefulset dht-node -n koorde-dht -p '{"spec":{"template":{"spec"
 
 For production deployment:
 
-| Resource | Configuration | Monthly Cost (approx) |
-|----------|--------------|----------------------|
-| EKS Control Plane | 1 cluster | $73 |
-| EC2 Nodes | 3 × t3.medium | $100 |
-| Load Balancer | 1 NLB | $20 |
-| Data Transfer | 100 GB | $9 |
-| **Total** | | **~$200/month** |
+| Resource          | Configuration | Monthly Cost (approx) |
+| ----------------- | ------------- | --------------------- |
+| EKS Control Plane | 1 cluster     | $73                   |
+| EC2 Nodes         | 3 × t3.medium | $100                  |
+| Load Balancer     | 1 NLB         | $20                   |
+| Data Transfer     | 100 GB        | $9                    |
+| **Total**         |               | **~$200/month**       |
 
 For development:
+
 - Use t3.small nodes: ~$50/month
 - Single node cluster: ~$90/month
 - Stop cluster when not in use
@@ -1118,6 +1216,7 @@ You can benchmark and compare KoordeDHT and Chord at various cluster sizes using
 ### 2. Scale the Number of Nodes
 
 Adjust the number of nodes for each system as needed:
+
 ```bash
 # For Koorde (namespace: koorde-dht)
 kubectl scale statefulset dht-node --replicas=20 -n koorde-dht
@@ -1125,11 +1224,13 @@ kubectl scale statefulset dht-node --replicas=20 -n koorde-dht
 # For Chord (namespace: chord-dht)
 kubectl scale statefulset dht-node --replicas=20 -n chord-dht
 ```
+
 Change `20` to your desired node count.
 
 ### 3. Wait for All Pods to Be Ready
 
 Monitor pod status:
+
 ```bash
 kubectl get pods -n koorde-dht -w
 kubectl get pods -n chord-dht -w
@@ -1138,6 +1239,7 @@ kubectl get pods -n chord-dht -w
 ### 4. Run Workload Generator
 
 For each system, run the workload generator targeting the respective load balancer:
+
 ```bash
 # For Koorde
 LB_KOORDE=$(kubectl get svc dht-cache-http -n koorde-dht -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
@@ -1210,6 +1312,7 @@ cd deploy/eks
 ```
 
 This script will:
+
 1. Delete Services (removes load balancers)
 2. Delete StatefulSet (removes pods)
 3. Delete ConfigMap
@@ -1233,6 +1336,7 @@ eksctl delete cluster --name koorde-cache --region us-west-2
 ```
 
 > **Important for AWS Learner Lab:**
+>
 > - Learner Lab sessions expire after 4 hours
 > - Always delete resources before session expires to avoid orphaned resources
 > - If the session expires with resources running, start a new session and delete them
@@ -1270,4 +1374,3 @@ eksctl get cluster --region us-west-2
 - [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/)
 - [StatefulSet Documentation](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
 - [Horizontal Pod Autoscaling](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/)
-

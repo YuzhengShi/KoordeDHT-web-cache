@@ -5,25 +5,17 @@ metadata:
   name: koorde-cache
   region: us-west-2
 
-# Use the existing LabRole to avoid "iam:CreateRole" permission errors
+# Use existing LabRole (required for AWS Learner Lab)
 iam:
-  serviceRoleARN: arn:aws:iam::007438440430:role/LabRole
+  serviceRoleARN: arn:aws:iam::849778011007:role/LabRole
   withOIDC: false
 
 managedNodeGroups:
   - name: standard-workers
-    instanceType: t3.medium
+    instanceType: t3.xlarge
     minSize: 3
-    maxSize: 6
-    desiredCapacity: 3
+    maxSize: 64
+    desiredCapacity: 36
     volumeSize: 20
-    # Use LabRole for worker nodes too
     iam:
-      instanceRoleARN: arn:aws:iam::007438440430:role/LabRole
-
-# Addons often require IAM permissions to create roles.
-# We will rely on the default installed addons or install them manually if needed.
-# addons:
-#   - name: vpc-cni
-#   - name: coredns
-#   - name: kube-proxy
+      instanceRoleARN: arn:aws:iam::849778011007:role/LabRole

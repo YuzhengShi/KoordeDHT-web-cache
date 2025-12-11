@@ -43,6 +43,7 @@ type DHTConfig struct {
 	FaultTolerance FaultToleranceConfig         `yaml:"faultTolerance"`
 	Storage        StorageConfig                `yaml:"storage"`
 	Bootstrap      configloader.BootstrapConfig `yaml:"bootstrap"`
+	ClusterNodes   []string                     `yaml:"clusterNodes"` // For simple hash: list of all node addresses
 }
 
 type NodeConfig struct {
@@ -94,6 +95,8 @@ func LoadConfig(path string) (*Config, error) {
 	configloader.OverrideDuration(&cfg.DHT.FaultTolerance.FailureTimeout, "FAILURE_TIMEOUT")
 
 	configloader.OverrideDuration(&cfg.DHT.Storage.FixInterval, "STORAGE_FIX_INTERVAL")
+
+	configloader.OverrideStringSlice(&cfg.DHT.ClusterNodes, "CLUSTER_NODES") // comma-separated list for simple hash
 
 	configloader.OverrideString(&cfg.DHT.Bootstrap.Mode, "BOOTSTRAP_MODE")
 	configloader.OverrideStringSlice(&cfg.DHT.Bootstrap.Peers, "BOOTSTRAP_PEERS") // comma-separated list

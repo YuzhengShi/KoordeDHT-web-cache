@@ -21,28 +21,24 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - chord-node-0
-      - chord-node-1
-      - chord-node-2
-      - chord-node-3
-      - chord-node-4
-      - chord-node-5
-      - chord-node-6
-      - chord-node-7
+      - koorde-node-0
+      - koorde-node-1
+      - koorde-node-2
+      - koorde-node-3
 
-  chord-node-0:
+  koorde-node-0:
     build:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - DHT_PROTOCOL=chord
+      - DHT_PROTOCOL=koorde
       - NODE_ID=0000000000000000
-      - NODE_HOST=chord-node-0
+      - NODE_HOST=koorde-node-0
       - NODE_PORT=4000
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8080
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -55,19 +51,19 @@ services:
       - "8080:8080"
     depends_on:
       - localstack
-  chord-node-1:
+  koorde-node-1:
     build:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - DHT_PROTOCOL=chord
+      - DHT_PROTOCOL=koorde
       - NODE_ID=0000000000000001
-      - NODE_HOST=chord-node-1
+      - NODE_HOST=koorde-node-1
       - NODE_PORT=4001
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8081
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -80,19 +76,19 @@ services:
       - "8081:8081"
     depends_on:
       - localstack
-  chord-node-2:
+  koorde-node-2:
     build:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - DHT_PROTOCOL=chord
+      - DHT_PROTOCOL=koorde
       - NODE_ID=0000000000000002
-      - NODE_HOST=chord-node-2
+      - NODE_HOST=koorde-node-2
       - NODE_PORT=4002
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8082
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -105,19 +101,19 @@ services:
       - "8082:8082"
     depends_on:
       - localstack
-  chord-node-3:
+  koorde-node-3:
     build:
       context: ../../
       dockerfile: docker/node.Dockerfile
     environment:
-      - DHT_PROTOCOL=chord
+      - DHT_PROTOCOL=koorde
       - NODE_ID=0000000000000003
-      - NODE_HOST=chord-node-3
+      - NODE_HOST=koorde-node-3
       - NODE_PORT=4003
       - NODE_BIND=0.0.0.0
       - CACHE_HTTP_PORT=8083
       - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
+      - DEBRUIJN_DEGREE=2
       - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
       - ROUTE53_SUFFIX=dht.local
       - ROUTE53_REGION=us-east-1
@@ -128,105 +124,5 @@ services:
     ports:
       - "4003:4003"
       - "8083:8083"
-    depends_on:
-      - localstack
-  chord-node-4:
-    build:
-      context: ../../
-      dockerfile: docker/node.Dockerfile
-    environment:
-      - DHT_PROTOCOL=chord
-      - NODE_ID=0000000000000004
-      - NODE_HOST=chord-node-4
-      - NODE_PORT=4004
-      - NODE_BIND=0.0.0.0
-      - CACHE_HTTP_PORT=8084
-      - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
-      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
-      - ROUTE53_SUFFIX=dht.local
-      - ROUTE53_REGION=us-east-1
-      - ROUTE53_ENDPOINT=http://localstack:4566
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
-      - AWS_REGION=us-east-1
-    ports:
-      - "4004:4004"
-      - "8084:8084"
-    depends_on:
-      - localstack
-  chord-node-5:
-    build:
-      context: ../../
-      dockerfile: docker/node.Dockerfile
-    environment:
-      - DHT_PROTOCOL=chord
-      - NODE_ID=0000000000000005
-      - NODE_HOST=chord-node-5
-      - NODE_PORT=4005
-      - NODE_BIND=0.0.0.0
-      - CACHE_HTTP_PORT=8085
-      - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
-      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
-      - ROUTE53_SUFFIX=dht.local
-      - ROUTE53_REGION=us-east-1
-      - ROUTE53_ENDPOINT=http://localstack:4566
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
-      - AWS_REGION=us-east-1
-    ports:
-      - "4005:4005"
-      - "8085:8085"
-    depends_on:
-      - localstack
-  chord-node-6:
-    build:
-      context: ../../
-      dockerfile: docker/node.Dockerfile
-    environment:
-      - DHT_PROTOCOL=chord
-      - NODE_ID=0000000000000006
-      - NODE_HOST=chord-node-6
-      - NODE_PORT=4006
-      - NODE_BIND=0.0.0.0
-      - CACHE_HTTP_PORT=8086
-      - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
-      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
-      - ROUTE53_SUFFIX=dht.local
-      - ROUTE53_REGION=us-east-1
-      - ROUTE53_ENDPOINT=http://localstack:4566
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
-      - AWS_REGION=us-east-1
-    ports:
-      - "4006:4006"
-      - "8086:8086"
-    depends_on:
-      - localstack
-  chord-node-7:
-    build:
-      context: ../../
-      dockerfile: docker/node.Dockerfile
-    environment:
-      - DHT_PROTOCOL=chord
-      - NODE_ID=0000000000000007
-      - NODE_HOST=chord-node-7
-      - NODE_PORT=4007
-      - NODE_BIND=0.0.0.0
-      - CACHE_HTTP_PORT=8087
-      - BOOTSTRAP_MODE=route53
-      - DEBRUIJN_DEGREE=4
-      - ROUTE53_ZONE_ID=${ROUTE53_ZONE_ID:-Z00000000000000000000}
-      - ROUTE53_SUFFIX=dht.local
-      - ROUTE53_REGION=us-east-1
-      - ROUTE53_ENDPOINT=http://localstack:4566
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
-      - AWS_REGION=us-east-1
-    ports:
-      - "4007:4007"
-      - "8087:8087"
     depends_on:
       - localstack

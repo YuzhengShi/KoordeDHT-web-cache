@@ -13,6 +13,7 @@ import (
 	logicnode2 "KoordeDHT/internal/node/logicnode"
 	routingtable2 "KoordeDHT/internal/node/routingtable"
 	server2 "KoordeDHT/internal/node/server"
+	"KoordeDHT/internal/node/simple"
 	"KoordeDHT/internal/node/storage"
 	"KoordeDHT/internal/node/telemetry"
 	"context"
@@ -151,6 +152,33 @@ func main() {
 	var n dht.DHTNode
 
 	switch cfg.DHT.Protocol {
+	case "simple":
+		// Simple modulo hash - requires static cluster membership
+		simpleNode := simple.New(
+			&domainNode,
+			space,
+			cp,
+			store,
+			simple.WithLogger(lgr),
+		)
+
+		// Set up cluster nodes if configured
+		if len(cfg.DHT.ClusterNodes) > 0 {
+			clusterNodes := make([]*domain.Node, 0, len(cfg.DHT.ClusterNodes))
+			for _, addr := range cfg.DHT.ClusterNodes {
+				nodeID := space.NewIdFromString(addr)
+				clusterNodes = append(clusterNodes, &domain.Node{
+					ID:   nodeID,
+					Addr: addr,
+				})
+			}
+			simpleNode.SetClusterNodes(clusterNodes)
+		}
+
+		n = simpleNode
+		lgr.Info("Initialized Simple hash node",
+			logger.F("cluster_size", len(cfg.DHT.ClusterNodes)))
+
 	case "chord":
 		chordRT := chord.NewRoutingTable(
 			&domainNode,

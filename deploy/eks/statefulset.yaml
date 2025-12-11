@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: dht-node
-          image: 007438440430.dkr.ecr.us-west-2.amazonaws.com/koorde-node:latest
+          image: 849778011007.dkr.ecr.us-west-2.amazonaws.com/koorde-node:latest
           imagePullPolicy: Always
           command: ['/bin/bash', '/deploy/eks/entrypoint-chord.sh']
           args: ['/app/dht-node']

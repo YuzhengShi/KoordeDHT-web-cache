@@ -81,6 +81,10 @@ func (s *HTTPCacheServer) Start() error {
 	// Debug endpoint (routing table info)
 	mux.HandleFunc("/debug", s.handleDebug)
 
+	// Cluster membership update endpoints (simple hash only)
+	mux.HandleFunc("/cluster/remove", s.handleClusterRemove)
+	mux.HandleFunc("/cluster/add", s.handleClusterAdd)
+
 	addr := fmt.Sprintf(":%d", s.port)
 	s.server = &http.Server{
 		Addr:         addr,
@@ -180,11 +184,23 @@ func (s *HTTPCacheServer) handleCacheRequest(w http.ResponseWriter, r *http.Requ
 		responsible = selfNode
 	}
 
-	// STEP 3: Determine if we own the key based on local interval (pred, self]
-	// ALWAYS check actual ownership, even if X-Is-Responsible header is set
-	// (to prevent proxy loops if request arrives at wrong node)
+	// STEP 3: Determine if we own the key
+	// Use protocol-specific ownership check to avoid forwarding loops
 	ownsKey := false
-	if pred := s.node.Predecessor(); pred != nil {
+
+	// Check if this is a Simple Hash node (has IsResponsibleFor method)
+	type simpleHashOwner interface {
+		IsResponsibleFor(domain.ID) bool
+	}
+	if simpleNode, ok := s.node.(simpleHashOwner); ok {
+		// Simple Hash: use modulo-based ownership (hash % N == self.index)
+		ownsKey = simpleNode.IsResponsibleFor(urlHash)
+		s.lgr.Debug("Ownership check (simple hash modulo)",
+			logger.F("url", url),
+			logger.F("hash", urlHash.ToHexString(true)),
+			logger.F("owns_key", ownsKey))
+	} else if pred := s.node.Predecessor(); pred != nil {
+		// Chord/Koorde: use ring-based ownership (pred, self]
 		ownsKey = urlHash.Between(pred.ID, selfNode.ID)
 		s.lgr.Debug("Ownership check (pred, self]",
 			logger.F("url", url),
@@ -777,6 +793,104 @@ func (s *HTTPCacheServer) handleHealth(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}
 
+	json.NewEncoder(w).Encode(response)
+}
+
+// handleClusterRemove handles membership update requests for simple hash nodes.
+// POST /cluster/remove?node=localhost:4003
+// This endpoint only works for simple hash protocol nodes.
+func (s *HTTPCacheServer) handleClusterRemove(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed, use POST", http.StatusMethodNotAllowed)
+		return
+	}
+
+	nodeAddr := r.URL.Query().Get("node")
+	if nodeAddr == "" {
+		http.Error(w, "missing 'node' query parameter", http.StatusBadRequest)
+		return
+	}
+
+	// Type assertion to check if this is a simple hash node with RemoveNode method
+	type nodeRemover interface {
+		RemoveNode(addr string) error
+	}
+
+	remover, ok := s.node.(nodeRemover)
+	if !ok {
+		http.Error(w, "cluster membership update only supported for simple hash protocol", http.StatusBadRequest)
+		return
+	}
+
+	// Remove the node from cluster membership
+	if err := remover.RemoveNode(nodeAddr); err != nil {
+		s.lgr.Warn("Failed to remove node from cluster",
+			logger.F("node", nodeAddr),
+			logger.F("err", err))
+		http.Error(w, fmt.Sprintf("failed to remove node: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	s.lgr.Info("Node removed from cluster membership",
+		logger.F("removed_node", nodeAddr))
+
+	// Return success response
+	response := map[string]interface{}{
+		"success":      true,
+		"removed_node": nodeAddr,
+		"message":      "node removed from cluster membership",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// handleClusterAdd handles node addition requests for simple hash nodes.
+// POST /cluster/add?node=localhost:4003
+// This endpoint only works for simple hash protocol nodes.
+func (s *HTTPCacheServer) handleClusterAdd(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed, use POST", http.StatusMethodNotAllowed)
+		return
+	}
+
+	nodeAddr := r.URL.Query().Get("node")
+	if nodeAddr == "" {
+		http.Error(w, "missing 'node' query parameter", http.StatusBadRequest)
+		return
+	}
+
+	// Type assertion to check if this is a simple hash node with AddNode method
+	type nodeAdder interface {
+		AddNode(addr string) error
+	}
+
+	adder, ok := s.node.(nodeAdder)
+	if !ok {
+		http.Error(w, "cluster membership update only supported for simple hash protocol", http.StatusBadRequest)
+		return
+	}
+
+	// Add the node to cluster membership
+	if err := adder.AddNode(nodeAddr); err != nil {
+		s.lgr.Warn("Failed to add node to cluster",
+			logger.F("node", nodeAddr),
+			logger.F("err", err))
+		http.Error(w, fmt.Sprintf("failed to add node: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	s.lgr.Info("Node added to cluster membership",
+		logger.F("added_node", nodeAddr))
+
+	// Return success response
+	response := map[string]interface{}{
+		"success":    true,
+		"added_node": nodeAddr,
+		"message":    "node added to cluster membership",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
 

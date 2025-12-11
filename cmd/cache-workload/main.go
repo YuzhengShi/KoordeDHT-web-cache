@@ -51,8 +51,16 @@ func main() {
 	rate := flag.Float64("rate", 50, "Requests per second")
 	zipf := flag.Float64("zipf", 1.2, "Zipf alpha (must be > 1.0)")
 	output := flag.String("output", "results.csv", "Output file")
+	seed := flag.Int64("seed", 0, "Random seed (0 = use current time)")
+	origin := flag.String("origin", "https://httpbin.org", "Origin server base URL (use http://localhost:9999 for local mock)")
 
 	flag.Parse()
+
+	// Set seed for reproducibility
+	actualSeed := *seed
+	if actualSeed == 0 {
+		actualSeed = time.Now().UnixNano()
+	}
 
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Printf("Koorde Cache Workload Generator\n")
@@ -62,6 +70,7 @@ func main() {
 	fmt.Printf("Requests: %d\n", *requests)
 	fmt.Printf("Rate: %.2f req/sec\n", *rate)
 	fmt.Printf("Zipf: %.2f\n", *zipf)
+	fmt.Printf("Seed: %d\n", actualSeed)
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
 	// Validate parameters
@@ -78,21 +87,23 @@ func main() {
 	}
 
 	// Generate URLs (use real, accessible URLs for testing)
-	// Options: httpbin.org (fast, reliable), example.com (simple), or custom
+	// Options: httpbin.org (fast, reliable), localhost:9999 (local mock), or custom
 	urls := make([]string, *numURLs)
 
-	// Use httpbin.org endpoints which are designed for testing
-	httpbinEndpoints := []string{
+	// Use various endpoints for variety
+	endpoints := []string{
 		"/json", "/html", "/xml", "/robots.txt", "/deny",
 		"/status/200", "/status/201", "/status/202", "/status/204",
 		"/bytes/1024", "/bytes/2048", "/bytes/4096",
 		"/base64/SFRUUEJJTiBpcyBhd2Vzb21l", "/base64/VGVzdCBtZXNzYWdl",
 	}
 
+	fmt.Printf("Origin: %s\n", *origin)
+
 	for i := 0; i < *numURLs; i++ {
-		// Cycle through httpbin endpoints for variety
-		endpoint := httpbinEndpoints[i%len(httpbinEndpoints)]
-		urls[i] = fmt.Sprintf("https://httpbin.org%s", endpoint)
+		// Cycle through endpoints for variety
+		endpoint := endpoints[i%len(endpoints)]
+		urls[i] = fmt.Sprintf("%s%s", *origin, endpoint)
 	}
 
 	// Create Zipf distribution
@@ -100,7 +111,7 @@ func main() {
 	// - exponent (alpha) must be > 1.0 (Go requirement)
 	// - q must be > 1.0 (we use 1.5)
 	// - imax must be >= 1 (we use numURLs-1)
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	rng := rand.New(rand.NewSource(actualSeed))
 	zipfGen := rand.NewZipf(rng, *zipf, 1.5, uint64(*numURLs-1))
 	if zipfGen == nil {
 		fmt.Printf("Error: Failed to create Zipf distribution (alpha=%.2f, q=1.5, imax=%d)\n",
