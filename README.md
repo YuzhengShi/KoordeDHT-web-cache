@@ -948,10 +948,6 @@ A deeper look at the tail latency reveals significant differences in stability.
 
 *(Note: Throughput comparison is omitted for this specific experiment as tests were conducted in different network environments.)*
 
-### Visualizations
-**Figure 1: Average Latency vs. Node Count**
-![Latency vs Nodes](test/results/plots/latency_vs_nodes.png)
-*Comparison of Chord baseline against Koorde with varying degrees.*
 
 ### Analysis & Conclusions
 
@@ -1029,7 +1025,6 @@ This experiment evaluates **cache hit rate** stability under **node churn** for 
 | **3rd** | **Simple Hash** | **19.0%**    | 0        | ~75%               | WORST - key redistribution |
 
 #### Cache Hit Rate Progression
-*(Plot not checked in: hit_rate_comparison.png)*
 
 - **Chord** highest hit rate (consistent hashing preserves cache).
 - **Koorde** close behind (consistent hashing preserves cache).
@@ -1065,9 +1060,6 @@ This experiment compares how Koorde and Chord scale under increasing concurrent 
 - **Koorde** saturates earlier (~2200 RPS) and declines at high load (4000 users).
 - **Chord** demonstrates better stability and scalability under high concurrency.
 - **Koorde** shows more sensitivity to overload conditions.
-
-### Chart
-*(Plot not checked in: throughput.png; see available plot: test/results/plots/rps_vs_nodes.png)*
 
 ---
 
