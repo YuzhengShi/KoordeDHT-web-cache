@@ -13,7 +13,6 @@ The project includes local tooling, AWS EKS manifests for both protocols, and a 
 - EKS deployment (Koorde + Chord): `deploy/eks/README.md`
 - Benchmark runner (PowerShell): [Benchmark Guide](#benchmark-guide) and `benchmark-chord-vs-koorde.ps1`
 - Full benchmark writeup (3 experiments): [Benchmark Report](#benchmark-report)
-- Plots: `test/results/plots/latency_vs_nodes.png`, `test/results/plots/rps_vs_nodes.png`
 
 ---
 
