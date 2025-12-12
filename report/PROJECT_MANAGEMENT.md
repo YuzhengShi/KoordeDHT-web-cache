@@ -24,7 +24,7 @@ The project followed an iterative engineering lifecycle over the course of the t
 | **Phase 2** | **Local Integration** | Built Docker images (`node.Dockerfile`) and created `docker-compose` / LocalStack setups to test multi-node interaction. | ✅ Completed |
 | **Phase 3** | **Cloud Deployment** | Migrated to AWS EKS. Solved IAM and quota issues. Established a stable 8-32 node cluster environment. | ✅ Completed |
 | **Phase 4** | **Benchmarking** | Executed 3 major experiments: Latency Scaling, Churn Resilience, and Throughput Saturation. | ✅ Completed |
-| **Phase 5** | **Analysis & Reporting** | Aggregated CSV results, generated Python plots, and produced the final `BENCHMARK_REPORT.md`. | ✅ Completed |
+| **Phase 5** | **Analysis & Reporting** | Aggregated CSV results, generated Python plots, and produced the final `experiemnt_report.md`. | ✅ Completed |
 
 ## 4. Architecture & Implementation Breakdown
 We structured the repository to separate concerns, allowing parallel development.
