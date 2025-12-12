@@ -106,17 +106,6 @@ While Koorde has a superior asymptotic bound ($O(\frac{\log N}{\log \log N})$), 
 	3. **Higher-quota cloud run:** if possible, repeat full EKS runs on a higher-quota account (or larger instance types) and target N = 128/256/512 to observe real network effects.
 	4. **Netem amplification:** apply in-cluster artificial per-hop RTT (using `tc`/`netem`) to amplify the effect of hop-count differences so reductions in hops produce measurable latency improvements.
 
-- **Quick validation commands (examples):**
-
-```powershell
-# (1) Run nodes with multiple logical instances: adjust the pod command to spawn M logical nodes per pod
-kubectl set image deployment/my-node my-node-image:latest
-# (2) Apply netem to a node interface (example, run inside a privileged pod)
-tc qdisc add dev eth0 root netem delay 15ms
-```
-
-The above steps let you observe Koorde's theoretical benefits without needing dozens of physical machines. If you'd like, I can prepare the instrumentation patches (logging per-hop counts and timestamps) and a short script to spawn logical nodes per pod, then run a simulated N sweep (128→1024) and produce plots similar to the existing latency charts.
-
 ---
 
 ## Experiment 2: Cache Hit Rate Under 3-Phase Node Churn (4 → 3 → 4)
