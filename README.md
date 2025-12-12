@@ -1,123 +1,100 @@
-# KoordeDHT-Web-Cache – Distributed Web Caching with Koorde DHT
+# Koorde + Chord DHT Web Cache
 
-A **modern, production-ready distributed web caching system** built on the Koorde DHT protocol. This project extends the theoretical Koorde algorithm with a **web cache layer** that provides automatic content distribution, hotspot detection, and load balancing.
+Go implementation of a distributed web cache backed by two DHT routing layers:
 
-## Key Innovation: DHT-Based Web Cache
+- **Koorde** (de Bruijn routing with configurable degree $k$)
+- **Chord** (finger-table routing)
 
-Traditional CDNs use proprietary algorithms for content distribution. This project demonstrates how **Distributed Hash Tables** can power a scalable, self-organizing web cache:
-
-- **DHT-based content placement**: URLs are hashed and cached on responsible nodes
-- **Hotspot detection**: Popular content is automatically replicated
-- **Load balancing**: Hot URLs are randomly distributed to prevent overload
-- **Self-healing**: Automatic recovery from node failures
-- **O(log n) lookup**: Efficient content retrieval with few hops
+The project includes local tooling, AWS EKS manifests for both protocols, and a set of completed benchmark experiments with plots and reports.
 
 ---
 
-## Theoretical Foundation
+## What’s Implemented
 
-Based on the original Koorde paper:
+### Protocols
 
-> **Kaashoek MF, Karger DR.** *Koorde: A simple degree-optimal distributed hash table.*  
-> MIT Laboratory for Computer Science (2003)
+- **Koorde routing** via base-$k$ de Bruijn neighbors (degree $k$ in config)
+- **Chord routing** via finger tables and standard stabilization
+- Shared **successor list** style fault-tolerance mechanisms and periodic maintenance
 
-### Koorde DHT Properties
-- **Constant degree** with **O(log n)** hops per lookup
-- **Base-k de Bruijn graphs** for configurable performance (degree k = 2 to O(log n))
-- **O(log n / log log n)** hops with O(log n) degree
-- **Fault tolerance** through successor lists
-- **Low maintenance overhead** and deterministic routing
+### Web cache layer
+
+- URL-to-key mapping and “responsible node” routing via the DHT
+- HTTP cache endpoint plus metrics/health endpoints
+- Workload generator for Zipf-like request distributions
 
 ---
 
-## Project Structure
+## Repo Layout (Entry Points)
 
 ```
-KoordeDHT-web-cache/
-├── cmd/
-│   ├── node/              # Koorde DHT node with web cache
-│   ├── client/            # Interactive gRPC client
-│   ├── tester/            # Automated testing client
-│   └── cache-workload/    # HTTP workload generator
-├── internal/
-│   ├── domain/            # Core DHT algorithms (de Bruijn, identifiers)
-│   ├── node/
-│   │   ├── cache/         # Web cache + hotspot detection
-│   │   ├── server/        # HTTP cache server + gRPC DHT server
-│   │   ├── logicnode/     # Koorde routing logic
-│   │   └── routingtable/  # Routing table management
-│   └── bootstrap/         # Node discovery (Route53, static)
-├── deploy/
-│   ├── tracing/           # Local deployment with Jaeger
-│   ├── test/              # Automated testing with churn simulation
-│   ├── eks/               # AWS EKS with load balancer
-│   └── demonstration/     # AWS EC2 multi-instance deployment
-└── proto/                 # gRPC protocol definitions
+cmd/
+  node/            # Runs a cache+DHT node (Chord or Koorde based on config)
+  client/          # Interactive client utilities
+  tester/          # Benchmark/test helper
+  cache-workload/  # HTTP workload generator
+
+deploy/
+  eks/             # AWS EKS deployment (Chord + Koorde)
+  tracing/         # Local tracing setup (Jaeger)
+  test/            # Automated test harnesses
+
+config/
+  local-cluster/   # Example multi-node configs
+  chord-test/      # Chord-specific test configs
 ```
 
 ---
 
-## Key Features
+## Run Locally
 
-### Core Koorde Implementation
-- **Base-k de Bruijn graphs** (configurable degree: 2, 4, 8, 16, ...)
-- **Imaginary node simulation** for sparse ring handling
-- **BestImaginary optimization** (Section 3.3) for O(log n) hops
-- **Successor lists** for fault tolerance
-- **Periodic stabilization** (successor, predecessor, de Bruijn)
-- **Chord-compatible** join/leave protocols
+Use the detailed guide in `LOCAL-TESTING.md`. In short:
 
-### Web Cache Extension
-- **DHT-based content placement** with consistent hashing
-- **Exponential decay hotspot detection**
-- **Random distribution** for hot content
-- **LRU cache** with configurable capacity and TTL
-- **HTTP/REST API** for web cache operations
-- **Real-time metrics** (hit rate, hotspots, latency)
+```powershell
+go run ./cmd/node/main.go --config .\config\local-cluster\node0.yaml
+```
 
-### Production Features
-- **OpenTelemetry tracing** (Jaeger integration)
-- **Structured logging** (Zap)
-- **Thread-safe** routing table and cache
-- **Docker containerization**
-- **AWS deployment** automation
-- **Network simulation** (latency, jitter, packet loss)
-- **Churn simulation** (dynamic join/leave)
+Then start additional nodes with the other configs (node1.yaml, node2.yaml, ...).
 
 ---
 
-## Architecture
+## Deploy to AWS EKS
 
-### Microservices
+Follow `deploy/eks/README.md`.
 
-| Service | Description | Docker Image |
-|---------|-------------|--------------|
-| **koorde-node** | DHT node with web cache, de Bruijn routing, and Route53 integration | `flaviosimonelli/koorde-node` |
-| **koorde-client** | Interactive gRPC client for DHT operations (`put`, `get`, `delete`, `lookup`) | `flaviosimonelli/koorde-client` |
-| **cache-client** | Interactive HTTP client for web cache operations (`cache`, `metrics`, `health`) | Built locally |
-| **koorde-tester** | Automated testing client with CSV metrics generation | `flaviosimonelli/koorde-tester` |
-| **cache-workload** | Workload generator with Zipf distribution for realistic web traffic | Built locally |
-
-### Supporting Services
-
-| Service | Purpose |
-|---------|---------|
-| **Jaeger** | Distributed tracing (OpenTelemetry) |
-| **Pumba** | Network chaos engineering (latency, jitter, packet loss) |
-
-### AWS Integration
-
-| Service | Usage |
-|---------|-------|
-| **EC2** | Virtual instances for Koorde nodes |
-| **Route53** | DNS service for automatic node discovery |
-| **S3** | Storage for deployment scripts |
-| **CloudFormation** | Infrastructure as Code templates |
-| **VPC** | Private networking between instances |
+Notes:
+- EKS manifests/scripts support **both** `chord` and `koorde`.
+- Large-scale runs are constrained by the AWS Learner Lab quota limits; the benchmark report documents the achieved scale and limitations.
 
 ---
 
-## Web Cache Layer
+## Benchmarks & Results
+
+### Run the benchmark script (Windows PowerShell)
+
+```powershell
+\# Default parameters
+.\benchmark-chord-vs-koorde.ps1
+
+\# Example with explicit settings
+.\benchmark-chord-vs-koorde.ps1 -NumNodes 5 -NumRequests 1000 -Concurrency 10 -ZipfExponent 1.2
+```
+
+See `BENCHMARK_README.md` for full parameter documentation and output locations.
+
+### Read the results
+
+- Report: `BENCHMARK_REPORT.md`
+- Comparison snapshot: `BENCHMARK_COMPARISON_REPORT.md`
+- Plots: `test/results/plots/latency_vs_nodes.png`, `test/results/plots/rps_vs_nodes.png`
+
+---
+
+## References
+
+1. Kaashoek MF, Karger DR. *Koorde: A simple degree-optimal distributed hash table.* (2003)
+2. Stoica I, et al. *Chord: A scalable peer-to-peer lookup service for internet applications.* (SIGCOMM 2001)
+
 
 ### How It Works
 
