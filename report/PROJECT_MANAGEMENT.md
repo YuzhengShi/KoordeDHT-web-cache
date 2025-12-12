@@ -12,8 +12,8 @@ To manage the complexity of a distributed systems project, we divided responsibi
 
 | Role | Member | Key Responsibilities |
 | :--- | :--- | :--- |
-| **Protocol Engineer** | Teammate | **Core Logic & Correctness:**<br>• Implemented Koorde routing (de Bruijn graph) & Chord finger tables.<br>• Validated routing correctness and stabilization logic.<br>• **Experiments:** Conducted Latency and Cache Hit Rate (Churn) experiments. |
-| **Infrastructure Lead** | You | **Deployment & Scale:**<br>• Containerized the application (Docker) and designed K8s manifests.<br>• Managed AWS EKS infrastructure and LocalStack testing.<br>• **Experiments:** Led Throughput/Saturation testing and distributed Locust load generation. |
+| **Protocol Engineer** | Yuzheng Shi | **Core Logic & Correctness:**<br>• Implemented Koorde routing (de Bruijn graph) & Chord finger tables.<br>• Validated routing correctness and stabilization logic.<br>• **Experiments:** Conducted Latency and Cache Hit Rate (Churn) experiments. |
+| **Infrastructure Lead** | Anran Lyu | **Deployment & Scale:**<br>• Containerized the application (Docker) and designed K8s manifests.<br>• Managed AWS EKS infrastructure and LocalStack testing.<br>• **Experiments:** Led Throughput/Saturation testing and distributed Locust load generation. |
 
 ## 3. Project Timeline & Milestones
 The project followed an iterative engineering lifecycle over the course of the term.
