@@ -1,19 +1,67 @@
 package logicnode
 
 import (
+	dhtv1 "KoordeDHT/internal/api/dht/v1"
 	"KoordeDHT/internal/domain"
 	"KoordeDHT/internal/logger"
 	"KoordeDHT/internal/node/client"
 	"KoordeDHT/internal/node/ctxutil"
+	"KoordeDHT/internal/node/dht"
 	"context"
 	"errors"
 	"fmt"
 	"math/big"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+// HandleFindSuccessor processes a FindSuccessor RPC request.
+// It dispatches to FindSuccessorInit or FindSuccessorStep based on the request mode.
+func (n *Node) HandleFindSuccessor(ctx context.Context, req *dhtv1.FindSuccessorRequest) (*dhtv1.FindSuccessorResponse, error) {
+	if req == nil || len(req.TargetId) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "missing target_id")
+	}
+
+	// validate target ID
+	if err := n.IsValidID(req.TargetId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid target_id")
+	}
+	target := domain.ID(req.TargetId)
+
+	var (
+		succ *domain.Node
+		err  error
+	)
+
+	switch mode := req.Mode.(type) {
+	case *dhtv1.FindSuccessorRequest_Initial:
+		succ, err = n.FindSuccessorInit(ctx, target)
+	case *dhtv1.FindSuccessorRequest_Step:
+		if err := n.IsValidID(mode.Step.CurrentI); err != nil {
+			return nil, status.Error(codes.InvalidArgument, "invalid current_i")
+		}
+		if err := n.IsValidID(mode.Step.KShift); err != nil {
+			return nil, status.Error(codes.InvalidArgument, "invalid kshift")
+		}
+		currentI := domain.ID(mode.Step.CurrentI)
+		kshift := domain.ID(mode.Step.KShift)
+		succ, err = n.FindSuccessorStep(ctx, target, currentI, kshift)
+	default:
+		return nil, status.Error(codes.InvalidArgument, "invalid mode")
+	}
+
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "FindSuccessor failed: %v", err)
+	}
+	if succ == nil {
+		return nil, status.Error(codes.NotFound, "successor not found")
+	}
+
+	return &dhtv1.FindSuccessorResponse{Node: succ.ToProtoDHT()}, nil
+}
 
 // IsValidID checks whether the provided identifier is valid
 // within the identifier space of this node.
@@ -53,21 +101,21 @@ func (n *Node) Space() *domain.Space {
 func (n *Node) EstimateNetworkSize() int {
 	self := n.rt.Self()
 	succList := n.rt.SuccessorList()
-	
+
 	if len(succList) == 0 || succList[0] == nil {
 		return 1
 	}
-	
+
 	succ := succList[0]
 	if succ.ID.Equal(self.ID) {
-		return 1  // Single node
+		return 1 // Single node
 	}
-	
+
 	// Compute distance to first successor
 	selfBig := self.ID.ToBigInt()
 	succBig := succ.ID.ToBigInt()
 	maxID := new(big.Int).Lsh(big.NewInt(1), uint(n.rt.Space().Bits))
-	
+
 	var distance *big.Int
 	if succBig.Cmp(selfBig) > 0 {
 		distance = new(big.Int).Sub(succBig, selfBig)
@@ -76,22 +124,22 @@ func (n *Node) EstimateNetworkSize() int {
 		distance = new(big.Int).Sub(maxID, selfBig)
 		distance.Add(distance, succBig)
 	}
-	
+
 	// Estimate: n ≈ 2^b / distance
 	if distance.Sign() == 0 {
 		return 1
 	}
-	
+
 	estimate := new(big.Int).Div(maxID, distance)
 	estimatedN := estimate.Int64()
-	
+
 	if estimatedN < 1 {
 		estimatedN = 1
 	}
 	if estimatedN > 1000000 {
-		estimatedN = 1000000  // Cap at 1M to avoid overflow
+		estimatedN = 1000000 // Cap at 1M to avoid overflow
 	}
-	
+
 	return int(estimatedN)
 }
 
@@ -114,6 +162,35 @@ func (n *Node) findNextHop(list []*domain.Node, currentI domain.ID) int {
 		return -1
 	}
 
+	// Count non-nil nodes to avoid infinite loops
+	nonNilCount := 0
+	for _, node := range list {
+		if node != nil {
+			nonNilCount++
+		}
+	}
+	if nonNilCount == 0 {
+		n.lgr.Warn("findNextHop: all nodes in list are nil")
+		return -1
+	}
+	if nonNilCount == 1 {
+		// Only one node - return its index if it exists
+		for i, node := range list {
+			if node != nil {
+				return i
+			}
+		}
+		return -1
+	}
+
+	// First pass: check for exact match
+	// If currentI matches a node exactly, that node is the best candidate
+	for i, node := range list {
+		if node != nil && node.ID.Equal(currentI) {
+			return i
+		}
+	}
+
 	for i := 0; i < len(list); i++ {
 		curr := list[i]
 		if curr == nil {
@@ -121,10 +198,19 @@ func (n *Node) findNextHop(list []*domain.Node, currentI domain.ID) int {
 		}
 		// Find the next non-nil node in circular fashion
 		j := (i + 1) % len(list)
-		for list[j] == nil {
-			n.lgr.Warn("findNextHop: skipping nil node in list",
+		iterations := 0
+		maxIterations := len(list) // Prevent infinite loop
+		for list[j] == nil && iterations < maxIterations {
+			n.lgr.Debug("findNextHop: skipping nil node in list",
 				logger.F("index", j))
 			j = (j + 1) % len(list)
+			iterations++
+		}
+		if iterations >= maxIterations {
+			// All remaining nodes are nil, skip this iteration
+			n.lgr.Warn("findNextHop: could not find next non-nil node",
+				logger.F("start_index", i))
+			continue
 		}
 		next := list[j]
 		if currentI.Between(curr.ID, next.ID) {
@@ -204,6 +290,7 @@ func (n *Node) FindSuccessorInit(ctx context.Context, target domain.ID) (*domain
 //   - Returns an error if arithmetic (MulKMod, AddMod, NextDigitBaseK) fails.
 //   - Returns ctx.Err() if the context has expired or been canceled.
 func (n *Node) FindSuccessorStep(ctx context.Context, target, currentI, kshift domain.ID) (*domain.Node, error) {
+	start := time.Now()
 	// Abort if context expired
 	if err := ctxutil.CheckContext(ctx); err != nil {
 		return nil, err
@@ -224,6 +311,7 @@ func (n *Node) FindSuccessorStep(ctx context.Context, target, currentI, kshift d
 
 	// currentI is in (self, successor]: try de Bruijn routing
 	if currentI.Between(self.ID, succ.ID) {
+		attemptedDeBruijn := true
 
 		// Compute next digit and shifted target
 		nextDigit, nextKshift, err := n.rt.Space().NextDigitBaseK(kshift)
@@ -257,19 +345,36 @@ func (n *Node) FindSuccessorStep(ctx context.Context, target, currentI, kshift d
 
 			// Select de Bruijn next hop
 			index := n.findNextHop(Bruijn, nextI)
-			for i := index; i >= 0; i-- {
+
+			// If findNextHop found a valid index, try nodes from that index backwards
+			// If it returned -1, try all nodes in reverse order as fallback
+			startIdx := index
+			if startIdx < 0 {
+				// findNextHop returned -1: no interval found, try all nodes as fallback
+				startIdx = len(Bruijn) - 1
+				n.lgr.Debug("FindSuccessorStep: findNextHop returned -1, trying all de Bruijn nodes as fallback",
+					logger.F("target", target.ToHexString(true)),
+					logger.F("nextI", nextI.ToHexString(true)),
+					logger.F("debruijn_count", len(Bruijn)))
+			}
+
+			for i := startIdx; i >= 0; i-- {
 				d := Bruijn[i]
 				if d == nil {
 					continue
 				}
 				n.lgr.Debug("FindSuccessorStep: forwarding to de Bruijn node",
-					logger.F("target", target.ToHexString(true)), logger.FNode("nextHop", d))
+					logger.F("target", target.ToHexString(true)),
+					logger.F("nextI", nextI.ToHexString(true)),
+					logger.F("tryIdx", i),
+					logger.FNode("nextHop", d))
 				var res *domain.Node
 				var err error
 				if d.ID.Equal(self.ID) {
 					res, err = n.FindSuccessorStep(ctx, target, nextI, nextKshift)
 				} else {
-					cli, err := n.cp.GetFromPool(d.Addr)
+					var cli dhtv1.DHTClient
+					cli, err = n.cp.GetFromPool(d.Addr)
 					if err != nil {
 						n.lgr.Warn("FindSuccessorStep: failed to get connection from pool",
 							logger.F("tryIdx", i), logger.F("addr", d.Addr), logger.F("err", err))
@@ -279,22 +384,33 @@ func (n *Node) FindSuccessorStep(ctx context.Context, target, currentI, kshift d
 				}
 
 				if err == nil && res != nil {
+					if n.stats != nil {
+						n.stats.observeDeBruijnSuccess(time.Since(start))
+					}
 					return res, nil
 				}
 				// Abort if context expired
 				if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) || ctx.Err() != nil {
 					n.lgr.Error("FindSuccessorStep: lookup interrupted by timeout/cancel",
 						logger.F("tryIdx", i), logger.F("addr", d.Addr), logger.F("err", err))
+					if n.stats != nil {
+						n.stats.observeDeBruijnFailure(time.Since(start))
+					}
 					return nil, ctx.Err()
 				}
 				n.lgr.Warn("FindSuccessorStep: de Bruijn hop failed, trying previous candidate",
 					logger.F("tryIdx", i), logger.FNode("failedNode", d), logger.F("err", err))
 			}
 		}
-
 		// Fallback: de Bruijn list empty or all failed: use successor
 		n.lgr.Warn("FindSuccessorStep: de Bruijn failed or empty, falling back to successor",
 			logger.F("target", target.ToHexString(true)), logger.FNode("nextHop", succ))
+		if attemptedDeBruijn && n.stats != nil {
+			n.stats.observeDeBruijnFailure(time.Since(start))
+		}
+		if n.stats != nil {
+			n.stats.observeSuccessorFallback(time.Since(start))
+		}
 		cli, err := n.cp.GetFromPool(succ.Addr)
 		if err != nil {
 			n.lgr.Error("FindSuccessorStep: failed to get connection from pool (successor)",
@@ -307,6 +423,9 @@ func (n *Node) FindSuccessorStep(ctx context.Context, target, currentI, kshift d
 	// Default: forward to successor
 	n.lgr.Debug("FindSuccessorStep: forwarding to successor",
 		logger.F("target", target.ToHexString(true)), logger.FNode("nextHop", succ))
+	if n.stats != nil {
+		n.stats.observeSuccessorFallback(time.Since(start))
+	}
 	cli, err := n.cp.GetFromPool(succ.Addr)
 	if err != nil {
 		n.lgr.Error("FindSuccessorStep: failed to get connection from pool for successor",
@@ -357,6 +476,14 @@ func (n *Node) SuccessorList() []*domain.Node {
 //     Some entries may be nil if not yet populated.
 func (n *Node) DeBruijnList() []*domain.Node {
 	return n.rt.DeBruijnList()
+}
+
+// RoutingMetrics exposes Koorde-specific routing instrumentation.
+func (n *Node) RoutingMetrics() dht.RoutingMetrics {
+	if n.stats == nil {
+		return dht.RoutingMetrics{Protocol: "koorde"}
+	}
+	return n.stats.snapshot()
 }
 
 // Notify informs this node about a potential predecessor.

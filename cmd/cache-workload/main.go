@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -20,8 +21,31 @@ type Metrics struct {
 	latency int64 // nanoseconds
 }
 
+func parseTargetList(raw string, fallback string) []string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return []string{fallback}
+	}
+
+	parts := strings.Split(trimmed, ",")
+	targets := make([]string, 0, len(parts))
+	for _, p := range parts {
+		val := strings.TrimSpace(p)
+		if val != "" {
+			targets = append(targets, val)
+		}
+	}
+
+	if len(targets) == 0 {
+		return []string{fallback}
+	}
+
+	return targets
+}
+
 func main() {
-	target := flag.String("target", "http://localhost:8080", "Target node")
+	target := flag.String("target", "http://localhost:8080", "Target node (deprecated when --targets is set)")
+	targetsFlag := flag.String("targets", "", "Comma-separated list of target nodes (e.g. http://n1:8080,http://n2:8080)")
 	numURLs := flag.Int("urls", 100, "Number of unique URLs")
 	requests := flag.Int("requests", 1000, "Total requests")
 	rate := flag.Float64("rate", 50, "Requests per second")
@@ -32,7 +56,8 @@ func main() {
 
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Printf("Koorde Cache Workload Generator\n")
-	fmt.Printf("Target: %s\n", *target)
+	targetNodes := parseTargetList(*targetsFlag, *target)
+	fmt.Printf("Targets: %s\n", strings.Join(targetNodes, ", "))
 	fmt.Printf("URLs: %d\n", *numURLs)
 	fmt.Printf("Requests: %d\n", *requests)
 	fmt.Printf("Rate: %.2f req/sec\n", *rate)
@@ -55,16 +80,15 @@ func main() {
 	// Generate URLs (use real, accessible URLs for testing)
 	// Options: httpbin.org (fast, reliable), example.com (simple), or custom
 	urls := make([]string, *numURLs)
-	
+
 	// Use httpbin.org endpoints which are designed for testing
 	httpbinEndpoints := []string{
 		"/json", "/html", "/xml", "/robots.txt", "/deny",
 		"/status/200", "/status/201", "/status/202", "/status/204",
 		"/bytes/1024", "/bytes/2048", "/bytes/4096",
 		"/base64/SFRUUEJJTiBpcyBhd2Vzb21l", "/base64/VGVzdCBtZXNzYWdl",
-		"/delay/1", "/delay/2",
 	}
-	
+
 	for i := 0; i < *numURLs; i++ {
 		// Cycle through httpbin endpoints for variety
 		endpoint := httpbinEndpoints[i%len(httpbinEndpoints)]
@@ -118,7 +142,9 @@ func main() {
 		go func(urlID uint64, url string) {
 			reqStart := time.Now()
 
-			fullURL := fmt.Sprintf("%s/cache?url=%s", *target, url)
+			targetIdx := int(urlID) % len(targetNodes)
+			targetBase := targetNodes[targetIdx]
+			fullURL := fmt.Sprintf("%s/cache?url=%s", targetBase, url)
 			resp, err := http.Get(fullURL)
 
 			latency := time.Since(reqStart)
@@ -136,7 +162,7 @@ func main() {
 			cacheStatus := resp.Header.Get("X-Cache")
 			nodeID := resp.Header.Get("X-Node-ID")
 
-			if cacheStatus == "HIT-LOCAL" {
+			if strings.HasPrefix(cacheStatus, "HIT") {
 				atomic.AddInt64(&metrics.hits, 1)
 			} else {
 				atomic.AddInt64(&metrics.misses, 1)

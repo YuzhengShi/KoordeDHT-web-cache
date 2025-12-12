@@ -27,9 +27,23 @@ func NewRoute53Bootstrap(cfg configloader.Route53Config) (*Route53Bootstrap, err
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	awsCfg, err := config.LoadDefaultConfig(ctx,
+	// Configure AWS options
+	opts := []func(*config.LoadOptions) error{
 		config.WithRegion(cfg.Region),
-	)
+	}
+
+	if cfg.Endpoint != "" {
+		opts = append(opts, config.WithEndpointResolverWithOptions(aws.EndpointResolverWithOptionsFunc(
+			func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+				return aws.Endpoint{
+					URL:           cfg.Endpoint,
+					SigningRegion: cfg.Region,
+				}, nil
+			},
+		)))
+	}
+
+	awsCfg, err := config.LoadDefaultConfig(ctx, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load AWS config: %w", err)
 	}

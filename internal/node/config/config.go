@@ -36,6 +36,7 @@ type StorageConfig struct {
 }
 
 type DHTConfig struct {
+	Protocol       string                       `yaml:"protocol"`
 	IDBits         int                          `yaml:"idBits"`
 	Mode           string                       `yaml:"mode"`
 	DeBruijn       DeBruijnConfig               `yaml:"deBruijn"`
@@ -52,12 +53,12 @@ type NodeConfig struct {
 }
 
 type CacheConfig struct {
-	Enabled           bool    `yaml:"enabled"`
-	HTTPPort          int     `yaml:"httpPort"`
-	CapacityMB        int     `yaml:"capacityMB"`
-	DefaultTTL        int     `yaml:"defaultTTL"`        // seconds
-	HotspotThreshold  float64 `yaml:"hotspotThreshold"`  // requests/sec
-	HotspotDecayRate  float64 `yaml:"hotspotDecayRate"`  // gamma (0.6-0.8)
+	Enabled          bool    `yaml:"enabled"`
+	HTTPPort         int     `yaml:"httpPort"`
+	CapacityMB       int     `yaml:"capacityMB"`
+	DefaultTTL       int     `yaml:"defaultTTL"`       // seconds
+	HotspotThreshold float64 `yaml:"hotspotThreshold"` // requests/sec
+	HotspotDecayRate float64 `yaml:"hotspotDecayRate"` // gamma (0.6-0.8)
 }
 
 type Config struct {
@@ -82,6 +83,7 @@ func LoadConfig(path string) (*Config, error) {
 	configloader.OverrideInt(&cfg.Node.Port, "NODE_PORT")
 
 	configloader.OverrideString(&cfg.DHT.Mode, "DHT_MODE")
+	configloader.OverrideString(&cfg.DHT.Protocol, "DHT_PROTOCOL")
 	configloader.OverrideInt(&cfg.DHT.IDBits, "DHT_ID_BITS")
 
 	configloader.OverrideInt(&cfg.DHT.DeBruijn.Degree, "DEBRUIJN_DEGREE")
@@ -100,6 +102,7 @@ func LoadConfig(path string) (*Config, error) {
 	configloader.OverrideString(&cfg.DHT.Bootstrap.Route53.DomainSuffix, "ROUTE53_SUFFIX")
 	configloader.OverrideInt64(&cfg.DHT.Bootstrap.Route53.TTL, "ROUTE53_TTL")
 	configloader.OverrideString(&cfg.DHT.Bootstrap.Route53.Region, "ROUTE53_REGION")
+	configloader.OverrideString(&cfg.DHT.Bootstrap.Route53.Endpoint, "ROUTE53_ENDPOINT")
 
 	configloader.OverrideBool(&cfg.Telemetry.Tracing.Enabled, "TRACING_ENABLED")
 	configloader.OverrideString(&cfg.Telemetry.Tracing.Exporter, "TRACING_EXPORTER")
@@ -141,6 +144,9 @@ func LoadConfig(path string) (*Config, error) {
 	// Apply defaults
 	if cfg.Node.Bind == "" {
 		cfg.Node.Bind = "0.0.0.0"
+	}
+	if cfg.DHT.Protocol == "" {
+		cfg.DHT.Protocol = "koorde"
 	}
 
 	return cfg, nil
@@ -335,6 +341,7 @@ func (cfg *Config) LogConfig(lgr logger.Logger) {
 		logger.F("dht.bootstrap.register.domainSuffix", cfg.DHT.Bootstrap.Route53.DomainSuffix),
 		logger.F("dht.bootstrap.register.ttl", cfg.DHT.Bootstrap.Route53.TTL),
 		logger.F("dht.bootstrap.register.region", cfg.DHT.Bootstrap.Route53.Region),
+		logger.F("dht.bootstrap.register.endpoint", cfg.DHT.Bootstrap.Route53.Endpoint),
 
 		// Node
 		logger.F("node.id", cfg.Node.Id),

@@ -1,422 +1,1073 @@
-# KoordeDHT-Web-Cache – Distributed Web Caching with Koorde DHT
+# Koorde + Chord DHT Web Cache
 
-A **modern, production-ready distributed web caching system** built on the Koorde DHT protocol. This project extends the theoretical Koorde algorithm with a **web cache layer** that provides automatic content distribution, hotspot detection, and load balancing.
+Go implementation of a distributed web cache backed by two DHT routing layers:
 
-## Key Innovation: DHT-Based Web Cache
+- **Koorde** (de Bruijn routing with configurable degree $k$)
+- **Chord** (finger-table routing)
 
-Traditional CDNs use proprietary algorithms for content distribution. This project demonstrates how **Distributed Hash Tables** can power a scalable, self-organizing web cache:
+The project includes local tooling, AWS EKS manifests for both protocols, and a set of completed benchmark experiments with plots and reports.
 
-- **DHT-based content placement**: URLs are hashed and cached on responsible nodes
-- **Hotspot detection**: Popular content is automatically replicated
-- **Load balancing**: Hot URLs are randomly distributed to prevent overload
-- **Self-healing**: Automatic recovery from node failures
-- **O(log n) lookup**: Efficient content retrieval with few hops
+## Quick Links
 
----
-
-## Theoretical Foundation
-
-Based on the original Koorde paper:
-
-> **Kaashoek MF, Karger DR.** *Koorde: A simple degree-optimal distributed hash table.*  
-> MIT Laboratory for Computer Science (2003)
-
-### Koorde DHT Properties
-- **Constant degree** with **O(log n)** hops per lookup
-- **Base-k de Bruijn graphs** for configurable performance (degree k = 2 to O(log n))
-- **O(log n / log log n)** hops with O(log n) degree
-- **Fault tolerance** through successor lists
-- **Low maintenance overhead** and deterministic routing
+- Local development/testing: [Local Testing Guide](#local-testing-guide)
+- EKS deployment (Koorde + Chord): `deploy/eks/README.md`
+- Benchmark runner (PowerShell): [Benchmark Guide](#benchmark-guide) and `benchmark-chord-vs-koorde.ps1`
+- Full benchmark writeup (3 experiments): [Benchmark Report](#benchmark-report)
 
 ---
 
-## Project Structure
+## What’s Implemented
+
+### Protocols
+
+- **Koorde routing** via base-$k$ de Bruijn neighbors (degree $k$ in config)
+- **Chord routing** via finger tables and standard stabilization
+- Shared **successor list** style fault-tolerance mechanisms and periodic maintenance
+
+### Web cache layer
+
+- URL-to-key mapping and “responsible node” routing via the DHT
+- HTTP cache endpoint plus metrics/health endpoints
+- Workload generator for Zipf-like request distributions
+
+---
+
+## Repo Layout (Entry Points)
 
 ```
-KoordeDHT-web-cache/
-├── cmd/
-│   ├── node/              # Koorde DHT node with web cache
-│   ├── client/            # Interactive gRPC client
-│   ├── tester/            # Automated testing client
-│   └── cache-workload/    # HTTP workload generator
-├── internal/
-│   ├── domain/            # Core DHT algorithms (de Bruijn, identifiers)
-│   ├── node/
-│   │   ├── cache/         # Web cache + hotspot detection
-│   │   ├── server/        # HTTP cache server + gRPC DHT server
-│   │   ├── logicnode/     # Koorde routing logic
-│   │   └── routingtable/  # Routing table management
-│   └── bootstrap/         # Node discovery (Route53, static)
-├── deploy/
-│   ├── tracing/           # Local deployment with Jaeger
-│   ├── test/              # Automated testing with churn simulation
-│   ├── eks/               # AWS EKS with load balancer
-│   └── demonstration/     # AWS EC2 multi-instance deployment
-└── proto/                 # gRPC protocol definitions
+cmd/
+  node/            # Runs a cache+DHT node (Chord or Koorde based on config)
+  client/          # Interactive client utilities
+  tester/          # Benchmark/test helper
+  cache-workload/  # HTTP workload generator
+
+deploy/
+  eks/             # AWS EKS deployment (Chord + Koorde)
+  tracing/         # Local tracing setup (Jaeger)
+  test/            # Automated test harnesses
+
+config/
+  local-cluster/   # Example multi-node configs
+  chord-test/      # Chord-specific test configs
 ```
 
 ---
 
-## Key Features
+## Run Locally
 
-### Core Koorde Implementation
-- **Base-k de Bruijn graphs** (configurable degree: 2, 4, 8, 16, ...)
-- **Imaginary node simulation** for sparse ring handling
-- **BestImaginary optimization** (Section 3.3) for O(log n) hops
-- **Successor lists** for fault tolerance
-- **Periodic stabilization** (successor, predecessor, de Bruijn)
-- **Chord-compatible** join/leave protocols
+See the [Local Testing Guide](#local-testing-guide). In short:
 
-### Web Cache Extension
-- **DHT-based content placement** with consistent hashing
-- **Exponential decay hotspot detection**
-- **Random distribution** for hot content
-- **LRU cache** with configurable capacity and TTL
-- **HTTP/REST API** for web cache operations
-- **Real-time metrics** (hit rate, hotspots, latency)
+```powershell
+go run ./cmd/node/main.go --config .\config\local-cluster\node0.yaml
+```
 
-### Production Features
-- **OpenTelemetry tracing** (Jaeger integration)
-- **Structured logging** (Zap)
-- **Thread-safe** routing table and cache
-- **Docker containerization**
-- **AWS deployment** automation
-- **Network simulation** (latency, jitter, packet loss)
-- **Churn simulation** (dynamic join/leave)
+Then start additional nodes with the other configs (node1.yaml, node2.yaml, ...).
 
 ---
 
-## Architecture
+## Deploy to AWS EKS
 
-### Microservices
+Follow `deploy/eks/README.md`.
 
-| Service | Description | Docker Image |
-|---------|-------------|--------------|
-| **koorde-node** | DHT node with web cache, de Bruijn routing, and Route53 integration | `flaviosimonelli/koorde-node` |
-| **koorde-client** | Interactive gRPC client for DHT operations (`put`, `get`, `delete`, `lookup`) | `flaviosimonelli/koorde-client` |
-| **cache-client** | Interactive HTTP client for web cache operations (`cache`, `metrics`, `health`) | Built locally |
-| **koorde-tester** | Automated testing client with CSV metrics generation | `flaviosimonelli/koorde-tester` |
-| **cache-workload** | Workload generator with Zipf distribution for realistic web traffic | Built locally |
-
-### Supporting Services
-
-| Service | Purpose |
-|---------|---------|
-| **Jaeger** | Distributed tracing (OpenTelemetry) |
-| **Pumba** | Network chaos engineering (latency, jitter, packet loss) |
-
-### AWS Integration
-
-| Service | Usage |
-|---------|-------|
-| **EC2** | Virtual instances for Koorde nodes |
-| **Route53** | DNS service for automatic node discovery |
-| **S3** | Storage for deployment scripts |
-| **CloudFormation** | Infrastructure as Code templates |
-| **VPC** | Private networking between instances |
+Notes:
+- EKS manifests/scripts support **both** `chord` and `koorde`.
+- Large-scale runs are constrained by the AWS Learner Lab quota limits; the benchmark report documents the achieved scale and limitations.
 
 ---
 
-## Web Cache Layer
+## Benchmarks & Results
 
-### How It Works
+### Run the benchmark script (Windows PowerShell)
 
-```
-Client Request → Node Entry Point
-                     ↓
-              [Local Cache?]
-                ↙         ↘
-              HIT        MISS
-               ↓           ↓
-            Return    [Hotspot?]
-                       ↙     ↘
-                     YES     NO
-                      ↓       ↓
-                  Random   DHT Lookup
-                  Node       ↓
-                      ↓   [Responsible Node]
-                      ↓       ↓
-                      └→ Fetch from Origin
-                             ↓
-                        Cache & Return
+```powershell
+# Default parameters
+.\benchmark-chord-vs-koorde.ps1
+
+# Example with explicit settings
+.\benchmark-chord-vs-koorde.ps1 -NumNodes 5 -NumRequests 1000 -Concurrency 10 -ZipfExponent 1.2
 ```
 
-### Features
+See the [Benchmark Guide](#benchmark-guide) for full parameter documentation and output locations.
 
-**1. DHT-Based Content Distribution**
-- URLs are hashed using SHA-1 (same algorithm as node IDs)
-- Content stored at the responsible node (successor of hash in circular ID space)
-- Consistent hashing ensures URLs are uniformly distributed
-- **Note**: In small networks (5-10 nodes), some nodes may handle more requests due to uneven ID space coverage
+### Read the results
 
-**2. Hotspot Detection**
-- Exponential moving average tracks request rates
-- Threshold-based classification (default: 100 req/sec)
-- Automatic replication for hot content to random nodes
-
-**3. LRU Cache with TTL**
-- Configurable capacity (default: 1GB per node)
-- Time-to-live expiration (default: 1 hour)
-- Automatic eviction of least recently used items
-
-**4. HTTP API**
-```bash
-# Cache a URL
-GET http://node:8080/cache?url=https://example.com/page.html
-
-# Response headers
-X-Cache: HIT-LOCAL | MISS-DHT | MISS-HOT | MISS-ORIGIN
-X-Node-ID: 0x1a2b3c...
-X-Latency-Ms: 15.23
-
-# Metrics endpoint
-GET http://node:8080/metrics
-{
-  "cache": {
-    "hit_rate": 0.85,
-    "hits": 1250,
-    "misses": 220,
-    "entries": 450
-  },
-  "hotspots": {
-    "count": 3,
-    "urls": ["https://popular.com/video.mp4", ...]
-  }
-}
-
-# Health check
-GET http://node:8080/health
-```
-
----
-
-## Performance
-
-### Lookup Complexity
-| Configuration | Degree | Hops | Use Case |
-|--------------|--------|------|----------|
-| Minimal | k=2 | O(log n) ≈ 10 | Low memory |
-| Balanced | k=8 | O(log₈ n) ≈ 3-4 | **Default** |
-| Optimal | k=O(log n) | O(log n / log log n) | Maximum speed |
-
-### Cache Performance
-- **Hit Rate**: 70-90% for realistic Zipf workloads
-- **Latency**: Sub-10ms for cache hits, <100ms for DHT lookups
-- **Throughput**: 1000+ requests/sec per node
-
-## Quick Start
-
-### Phase 1: Local Testing (No Cloud Required)
-
-**Test everything on your laptop first**:
-
-```bash
-# Build binaries
-go build -o bin/ ./cmd/...
-
-# Start 5-node local cluster
-./test-local-cluster.sh 5
-
-# Test cache
-curl "http://localhost:8080/health"
-curl "http://localhost:8080/cache?url=https://httpbin.org/json"
-curl "http://localhost:8080/metrics" | jq
-
-# Run workload test
-./bin/cache-workload \
-  --target http://localhost:8080 \
-  --urls 100 \
-  --requests 1000 \
-  --rate 50 \
-  --zipf 1.2 \
-  --output phase1-results.csv
-
-# Stop cluster
-./stop-local-cluster.sh
-```
-
-### Phase 2: Cloud Deployment (1000+ Nodes)
-
-**After Phase 1 validation, deploy to AWS**:
-
-#### Option A: Local Docker (Testing)
-```bash
-cd deploy/tracing
-docker-compose up -d --scale node=5
-curl "http://localhost:8080/cache?url=https://httpbin.org/json"
-```
-
-#### Option B: AWS EKS (Production)
-```bash
-# Create EKS cluster
-eksctl create cluster --name koorde-cache --region us-east-1 --nodes 3
-
-# Deploy
-
-                  Internet
-                     |
-              [AWS ALB/NLB]
-                     |
-         ┌───────────┴───────────┐
-         |                       |
-    [Ingress/Service]      [Ingress/Service]
-         |                       |
-    HTTP Cache :8080        gRPC DHT :4000
-         |                       |
-    ┌────┴────────┬──────────────┴────┐
-    |             |                    |
-[Pod: node-0] [Pod: node-1]  ... [Pod: node-N]
-    |             |                    |
-StatefulSet with persistent identity
-
-
-### Generate Workload
-
-```bash
-go run cmd/cache-workload/main.go \
-  --target http://localhost:8080 \
-  --urls 100 \
-  --requests 1000 \
-  --rate 50 \
-  --zipf 1.2 \
-  --output results.csv
-```
-
-**Note on Zipf parameter:**
-- `--zipf` must be > 1.0 (required by Go's `rand.NewZipf`)
-- Higher values (1.2-1.5) create more realistic web traffic patterns
-- Lower values (closer to 1.0) create more uniform distribution
-
----
-
-## Deployment Modes
-
-### 1. [Local with Tracing](deploy/tracing/README.md)
-- Quick testing and development
-- Jaeger UI for distributed tracing
-- Interactive DHT client
-- Web cache testing script
-
-### 2. [Automated Testing](deploy/test/README.md)
-- Churn simulation (random node failures)
-- Network chaos (Pumba)
-- Automated metrics collection
-- CSV output for analysis
-
-### 3. [AWS EKS with Load Balancer](deploy/eks/README.md)
-- Kubernetes StatefulSet deployment
-- AWS Application/Network Load Balancer
-- Horizontal pod autoscaling
-- Production-grade with health checks
-
-### 4. [AWS EC2 Multi-Instance](deploy/demonstration/README.md)
-- Multi-instance EC2 deployment
-- Route53 DNS discovery
-- CloudFormation templates
-- Manual scaling
-
----
-
-## Testing
-
-### Unit Tests
-```bash
-go test -v ./internal/domain/...
-go test -v ./internal/node/cache/...
-```
-
-### Integration Test
-```bash
-cd deploy/tracing
-./test_cache.sh
-```
-
-### Load Test
-```bash
-go run cmd/cache-workload/main.go \
-  --target http://localhost:8080 \
-  --urls 1000 \
-  --requests 10000 \
-  --rate 100 \
-  --zipf 1.2
-```
-
-### Verifying Cache Distribution
-
-When testing with a small cluster (5 nodes), you may notice that most cache requests go to 1-2 nodes. This is **normal**:
-
-```bash
-# Check which node is responsible for a URL
-curl -I "http://localhost:8080/cache?url=https://example.com"
-# Look for X-Responsible-Node header
-
-# Test multiple URLs to see distribution
-for url in "https://example.com" "https://httpbin.org/json" "https://www.google.com"; do
-  curl -s "http://localhost:8080/cache?url=${url}" | grep -i "X-Responsible-Node"
-done
-```
-
-**Expected behavior:**
-- Different URLs hash to different nodes (SHA-1 is uniform)
-- Some nodes handle more requests if they cover larger ID ranges
-- Distribution becomes uniform with 20+ nodes
-
----
-
-## Performance Tuning
-
-### Configuration Parameters
-
-```yaml
-# config/node/config.yaml
-dht:
-  idBits: 66                    # Identifier space size (2^66)
-  deBruijn:
-    degree: 8                   # Base-k de Bruijn (2, 4, 8, 16, ...)
-  faultTolerance:
-    successorListSize: 8        # Fault tolerance (≈ log n)
-    stabilizationInterval: 2s   # How often to stabilize
-
-cache:
-  capacityMB: 1024              # Cache size per node
-  defaultTTL: 3600              # Time-to-live (seconds)
-  hotspotThreshold: 100.0       # Requests/sec for hotspot (adjust for testing)
-  hotspotDecayRate: 0.65        # Decay factor γ ∈ (0,1)
-```
-
----
-
-
----
-
-## License
-
-This project is for academic and research purposes.
+- Report: [Benchmark Report](#benchmark-report)
+- Comparison snapshot: `BENCHMARK_COMPARISON_REPORT.md`
+- Plots: `test/results/plots/latency_vs_nodes.png`, `test/results/plots/rps_vs_nodes.png`
 
 ---
 
 ## References
 
-1. Kaashoek MF, Karger DR. *Koorde: A simple degree-optimal distributed hash table.* MIT Laboratory for Computer Science (2003)
-2. Stoica I, et al. *Chord: A scalable peer-to-peer lookup service for internet applications.* ACM SIGCOMM (2001)
-3. De Bruijn NG. *A combinatorial problem.* Koninklijke Nederlandse Akademie v. Wetenschappen (1946)
+1. Kaashoek MF, Karger DR. *Koorde: A simple degree-optimal distributed hash table.* (2003)
+2. Stoica I, et al. *Chord: A scalable peer-to-peer lookup service for internet applications.* (SIGCOMM 2001)
 
 ---
 
-## Related Work
+## Local Testing Guide
 
-- [Chord DHT](https://pdos.csail.mit.edu/papers/chord:sigcomm01/chord_sigcomm.pdf)
-- [Kademlia](https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf)
-- [CAN](https://people.eecs.berkeley.edu/~sylvia/papers/cans.pdf)
-- [Viceroy](https://theory.stanford.edu/~pragh/viceroy.pdf)
+Test KoordeDHT-Web-Cache locally on your machine **without any cloud deployment**.
+
+## Prerequisites
+
+- **Go 1.25+** installed
+- **8GB RAM** minimum
+- **No Docker required** (pure Go binaries)
 
 ---
 
-## Achievements
+## Quick Start (5 minutes)
 
-- **98% paper-compliant** Koorde implementation
-- **Web cache integration** with DHT
-- **Production-ready** with full observability
-- **Educational resource** for distributed systems
+### Step 1: Build Everything
 
-**Built for distributed systems research**
+```bash
+# Build all binaries
+go build -o bin/koorde-node ./cmd/node
+go build -o bin/koorde-client ./cmd/client
+go build -o bin/cache-workload ./cmd/cache-workload
+go build -o bin/cache-client ./cmd/cache-client
+
+# Or build all at once
+go build -o bin/ ./cmd/...
+```
+
+### Step 2: Start Bootstrap Node
+
+```bash
+# Terminal 1: Start bootstrap node
+./bin/koorde-node --config config/node/config.yaml
+```
+
+The bootstrap node will:
+- Listen on port 4000 (gRPC DHT)
+- Listen on port 8080 (HTTP cache)
+- Create a new DHT ring
+
+### Step 3: Test Cache
+
+```bash
+# Terminal 2: Test cache API
+curl "http://localhost:8080/health"
+curl "http://localhost:8080/cache?url=https://www.example.com"
+curl "http://localhost:8080/metrics" | jq
+```
+
+### Step 4: Test DHT Operations (Interactive)
+
+```bash
+# Terminal 3: Use interactive DHT client
+./bin/koorde-client --addr localhost:4000
+
+# In client:
+koorde[localhost:4000]> put mykey myvalue
+koorde[localhost:4000]> get mykey
+koorde[localhost:4000]> getrt
+koorde[localhost:4000]> exit
+```
+
+### Step 4b: Test Cache Operations (Interactive)
+
+```bash
+# Terminal 3: Use interactive cache client
+./bin/cache-client --addr http://localhost:8080
+
+# In client:
+cache[http://localhost:8080]> health
+✓ Healthy: READY | Node: 0x004f424bb575238275
+
+cache[http://localhost:8080]> cache https://www.example.com
+Status: 200 | Cache: MISS-ORIGIN | Latency: 245ms
+Content (1256 bytes): <!doctype html>...
+
+cache[http://localhost:8080]> cache https://www.example.com
+Status: 200 | Cache: HIT-LOCAL | Latency: 3ms
+Content (1256 bytes): <!doctype html>...
+
+cache[http://localhost:8080]> metrics
+{
+  "cache": {
+    "hits": 1,
+    "misses": 1,
+    "hit_rate": 0.5
+  }
+}
+
+cache[http://localhost:8080]> exit
+Bye!
+```
+
+### Step 5: Generate Load (Optional)
+
+```bash
+# Terminal 4: Run workload generator
+./bin/cache-workload \
+  --target http://localhost:8080 \
+  --urls 100 \
+  --requests 1000 \
+  --rate 50 \
+  --zipf 0.9 \
+  --output results.csv
+
+# View results
+cat results.csv
+```
+
+---
+
+## Multi-Node Local Cluster
+
+Test with multiple nodes on different ports:
+
+### Create Node Configs
+
+```bash
+# Create config directory
+mkdir -p config/local-cluster
+
+# Copy base config
+cp config/node/config.yaml config/local-cluster/node1.yaml
+cp config/node/config.yaml config/local-cluster/node2.yaml
+cp config/node/config.yaml config/local-cluster/node3.yaml
+```
+
+Edit each config to use different ports:
+
+**config/local-cluster/node1.yaml**:
+```yaml
+node:
+  bind: "0.0.0.0"
+  host: "localhost"
+  port: 4001
+
+cache:
+  httpPort: 8081
+  
+dht:
+  bootstrap:
+    mode: "static"
+    peers: []  # First node (bootstrap)
+```
+
+**config/local-cluster/node2.yaml**:
+```yaml
+node:
+  bind: "0.0.0.0"
+  host: "localhost"
+  port: 4002
+
+cache:
+  httpPort: 8082
+  
+dht:
+  bootstrap:
+    mode: "static"
+    peers: ["localhost:4001"]  # Connect to node1
+```
+
+**config/local-cluster/node3.yaml**:
+```yaml
+node:
+  bind: "0.0.0.0"
+  host: "localhost"
+  port: 4003
+
+cache:
+  httpPort: 8083
+  
+dht:
+  bootstrap:
+    mode: "static"
+    peers: ["localhost:4001"]  # Connect to node1
+```
+
+### Start Nodes
+
+```bash
+# Terminal 1: Bootstrap node
+./bin/koorde-node --config config/local-cluster/node1.yaml
+
+# Terminal 2: Node 2
+./bin/koorde-node --config config/local-cluster/node2.yaml
+
+# Terminal 3: Node 3
+./bin/koorde-node --config config/local-cluster/node3.yaml
+
+# Wait 10 seconds for stabilization
+```
+
+### Test Multi-Node Setup
+
+```bash
+# Check each node's routing table
+./bin/koorde-client --addr localhost:4001 <<EOF
+getrt
+exit
+EOF
+
+./bin/koorde-client --addr localhost:4002 <<EOF
+getrt
+exit
+EOF
+
+# Test cache on each node
+curl "http://localhost:8081/cache?url=https://httpbin.org/json"
+curl "http://localhost:8082/cache?url=https://httpbin.org/json"
+curl "http://localhost:8083/cache?url=https://httpbin.org/json"
+
+# Check metrics
+curl "http://localhost:8081/metrics" | jq '.node.id'
+curl "http://localhost:8082/metrics" | jq '.node.id'
+curl "http://localhost:8083/metrics" | jq '.node.id'
+```
+
+---
+
+## Automated Local Testing Script
+
+I'll create a script that starts multiple nodes automatically:
+
+Save as `test-local-cluster.sh`:
+
+```bash
+#!/bin/bash
+set -euo pipefail
+
+NUM_NODES=${1:-5}
+BASE_GRPC_PORT=4000
+BASE_HTTP_PORT=8080
+
+echo "============================================"
+echo "  Starting Local Koorde Cluster"
+echo "============================================"
+echo "Nodes: ${NUM_NODES}"
+echo ""
+
+# Build if needed
+if [ ! -f bin/koorde-node ]; then
+    echo "Building binaries..."
+    go build -o bin/koorde-node ./cmd/node
+fi
+
+# Create config directory
+mkdir -p config/local-cluster
+rm -f config/local-cluster/*.yaml
+
+# Generate configs
+echo "Generating configurations..."
+BOOTSTRAP_PEERS=""
+for i in $(seq 0 $((NUM_NODES-1))); do
+    GRPC_PORT=$((BASE_GRPC_PORT + i))
+    HTTP_PORT=$((BASE_HTTP_PORT + i))
+    
+    if [ $i -eq 0 ]; then
+        BOOTSTRAP_PEERS=""
+    else
+        BOOTSTRAP_PEERS="localhost:4000"
+    fi
+    
+    cat > config/local-cluster/node${i}.yaml <<EOF
+logger:
+  active: true
+  level: "info"
+  encoding: "console"
+  mode: "stdout"
+
+node:
+  bind: "0.0.0.0"
+  host: "localhost"
+  port: ${GRPC_PORT}
+
+dht:
+  idBits: 66
+  mode: "private"
+  
+  bootstrap:
+    mode: "static"
+    peers: [${BOOTSTRAP_PEERS:+"\"$BOOTSTRAP_PEERS\""}]
+  
+  deBruijn:
+    degree: 8
+    fixInterval: 5s
+  
+  storage:
+    fixInterval: 20s
+  
+  faultTolerance:
+    successorListSize: 8
+    stabilizationInterval: 2s
+    failureTimeout: 1s
+
+cache:
+  enabled: true
+  httpPort: ${HTTP_PORT}
+  capacityMB: 512
+  defaultTTL: 3600
+  hotspotThreshold: 100.0
+  hotspotDecayRate: 0.65
+
+telemetry:
+  tracing:
+    enabled: false
+EOF
+done
+
+# Start nodes in background
+echo "Starting nodes..."
+PIDS=()
+for i in $(seq 0 $((NUM_NODES-1))); do
+    GRPC_PORT=$((BASE_GRPC_PORT + i))
+    HTTP_PORT=$((BASE_HTTP_PORT + i))
+    
+    echo "  Starting node-${i} (gRPC: ${GRPC_PORT}, HTTP: ${HTTP_PORT})"
+    ./bin/koorde-node --config config/local-cluster/node${i}.yaml > logs/node${i}.log 2>&1 &
+    PIDS+=($!)
+    
+    # Small delay between nodes
+    sleep 2
+done
+
+# Save PIDs
+mkdir -p logs
+echo "${PIDS[@]}" > logs/pids.txt
+
+echo ""
+echo "All nodes started! PIDs: ${PIDS[@]}"
+echo ""
+echo "Logs saved to: logs/node*.log"
+echo ""
+echo "Waiting 10 seconds for DHT stabilization..."
+sleep 10
+
+# Test
+echo ""
+echo "Testing cluster..."
+echo "============================================"
+
+# Health checks
+echo "Health checks:"
+for i in $(seq 0 $((NUM_NODES-1))); do
+    HTTP_PORT=$((BASE_HTTP_PORT + i))
+    STATUS=$(curl -s "http://localhost:${HTTP_PORT}/health" | jq -r '.status' 2>/dev/null || echo "ERROR")
+    echo "  Node ${i} (port ${HTTP_PORT}): ${STATUS}"
+done
+
+echo ""
+echo "Cache test:"
+curl -s "http://localhost:8080/cache?url=https://httpbin.org/json" | jq -r '.url' 2>/dev/null && echo "✓ Cache working" || echo "✗ Cache failed"
+
+echo ""
+echo "Metrics:"
+curl -s "http://localhost:8080/metrics" | jq '{cache: .cache, routing: .routing}' 2>/dev/null || echo "(jq not installed)"
+
+echo ""
+echo "============================================"
+echo "  Cluster Running Successfully!"
+echo "============================================"
+echo ""
+echo "Access cache:"
+echo "  curl \"http://localhost:8080/cache?url=YOUR_URL\""
+echo ""
+echo "Access metrics:"
+echo "  curl \"http://localhost:8080/metrics\" | jq"
+echo ""
+echo "Use interactive DHT client:"
+echo "  ./bin/koorde-client --addr localhost:4000"
+echo ""
+echo "Use interactive cache client:"
+echo "  ./bin/cache-client --addr http://localhost:8080"
+echo ""
+echo "To stop all nodes:"
+echo "  kill \$(cat logs/pids.txt)"
+echo ""
+```
+
+---
+
+## Interactive Clients
+
+### DHT Client (koorde-client)
+
+**Purpose**: Interact with DHT for key-value storage
+
+**Start**:
+```bash
+./bin/koorde-client --addr localhost:4000
+```
+
+**Commands**:
+```
+put <key> <value>     - Store key-value pair in DHT
+get <key>             - Retrieve value from DHT
+delete <key>          - Remove key from DHT
+lookup <id>           - Find successor of ID
+getrt                 - Show routing table
+getstore              - Show stored resources
+use <addr>            - Switch to different node
+exit                  - Quit
+```
+
+**Example**:
+```
+koorde[localhost:4000]> put user:123 Alice
+Put succeeded | latency=12ms
+
+koorde[localhost:4000]> get user:123
+Get succeeded (value=Alice) | latency=5ms
+
+koorde[localhost:4000]> getrt
+Routing table:
+  Self: 0x004f... (localhost:4000)
+  Successors: [...]
+  DeBruijn List: [...]
+```
+
+---
+
+### Cache Client (cache-client)
+
+**Purpose**: Interact with web cache for URL caching
+
+**Start**:
+```bash
+./bin/cache-client --addr http://localhost:8080
+```
+
+**Commands**:
+```
+cache <url>           - Fetch and cache a URL
+metrics               - Show cache statistics
+health                - Check node health
+hotspots              - Show hot URLs
+debug                 - Show routing table
+use <addr>            - Switch to different node
+help                  - Show commands
+exit                  - Quit
+```
+
+**Example**:
+```
+cache[http://localhost:8080]> health
+✓ Healthy: READY | Node: 0x004f...
+
+cache[http://localhost:8080]> cache https://www.example.com
+Status: 200 | Cache: MISS-ORIGIN | Latency: 245ms
+Content (1256 bytes): ...
+
+cache[http://localhost:8080]> cache https://www.example.com
+Status: 200 | Cache: HIT-LOCAL | Latency: 3ms
+Content (1256 bytes): ...
+
+cache[http://localhost:8080]> metrics
+{
+  "cache": {
+    "hits": 1,
+    "misses": 1,
+    "hit_rate": 0.5,
+    "entry_count": 1
+  }
+}
+
+cache[http://localhost:8080]> hotspots
+Hotspots detected: 0
+```
+
+**What You See**:
+- **MISS-ORIGIN**: First request, fetched from internet
+- **HIT-LOCAL**: Found in cache, served from memory
+- **Latency**: Dramatically faster on cache hits (250ms → 3ms)
+
+---
+
+### Comparison: DHT Client vs Cache Client
+
+| Feature | koorde-client (DHT) | cache-client (Web Cache) |
+|---------|---------------------|--------------------------|
+| **Port** | 4000 (gRPC) | 8080 (HTTP) |
+| **Protocol** | gRPC | HTTP/REST |
+| **Data** | Key-value pairs | URLs and web content |
+| **Commands** | put, get, delete | cache, metrics, health |
+| **Use Case** | Distributed database | Distributed CDN/proxy |
+| **Routing** | Koorde DHT | Same Koorde DHT |
+
+**Both use the same underlying DHT for routing!**
+
+---
+
+## Interactive Testing Workflows
+
+### Workflow 1: Verify Cache Works
+
+```bash
+# Start node
+./bin/koorde-node --config config/node/config.yaml &
+
+# Test with cache client
+./bin/cache-client
+```
+
+**In client**:
+```
+cache> health                          # Check node is ready
+cache> cache https://www.example.com   # Should be MISS
+cache> cache https://www.example.com   # Should be HIT
+cache> metrics                         # Verify hit_rate = 0.5
+cache> exit
+```
+
+---
+
+### Workflow 2: Test Hotspot Detection
+
+**Terminal 1** - Generate traffic:
+```bash
+for i in {1..200}; do
+  curl -s "http://localhost:8080/cache?url=https://www.example.com" > /dev/null &
+done
+wait
+```
+
+**Terminal 2** - Check hotspots:
+```bash
+./bin/cache-client
+```
+
+**In client**:
+```
+cache> hotspots
+Hotspots detected: 1
+Hot URLs:
+  [1] https://www.example.com
+
+cache> metrics
+{
+  "hotspots": {
+    "count": 1,
+    "urls": ["https://www.example.com"]
+  }
+}
+```
+
+---
+
+### Workflow 3: Multi-Node DHT Distribution
+
+**Start 3-node cluster**:
+```bash
+./test-local-cluster.sh 3
+```
+
+**Test with cache client**:
+```bash
+./bin/cache-client
+```
+
+**In client**:
+```
+cache> cache https://test1.com
+Status: 200 | Cache: MISS-ORIGIN
+Node: 0x004f...
+
+cache> use http://localhost:8081
+Switched to http://localhost:8081
+
+cache> cache https://test1.com
+Status: 200 | Cache: MISS-DHT | Responsible: localhost:4000
+# Node 8081 forwards to node 8080 (responsible via DHT)
+
+cache> cache https://test2.com
+Status: 200 | Cache: MISS-ORIGIN
+# Node 8081 is responsible for this URL
+
+cache> use http://localhost:8082
+cache> debug
+# See routing table of third node
+```
+
+---
+
+## Benchmark Guide
+
+This benchmark script compares the performance of Chord and Koorde DHT protocols for web caching workloads.
+
+## Quick Start
+
+```powershell
+.\benchmark-chord-vs-koorde.ps1
+```
+
+## Configuration
+
+The script accepts the following parameters:
+
+```powershell
+.\benchmark-chord-vs-koorde.ps1 `
+    -NumNodes 5 `
+    -NumRequests 1000 `
+    -Concurrency 10 `
+    -ZipfExponent 1.2 `
+    -WarmupSeconds 30 `
+    -TestDurationSeconds 60
+```
+
+### Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `NumNodes` | 5 | Number of nodes in each cluster |
+| `NumRequests` | 1000 | Total requests to send per protocol |
+| `Concurrency` | 10 | Concurrent requests (rate limiter) |
+| `ZipfExponent` | 1.2 | Zipf distribution exponent (higher = more skewed) |
+| `WarmupSeconds` | 30 | Time to wait for cluster stabilization |
+| `TestDurationSeconds` | 60 | Duration of test (currently not used, based on requests) |
+
+## What It Measures
+
+### Performance Metrics
+
+1. **Request Performance**
+   - Total requests
+   - Success/error rates
+   - Latency (avg, min, max, P50, P95, P99)
+
+2. **Cache Performance**
+   - Cache hits/misses
+   - Cache hit rate
+   - Total cache entries
+   - Cache size utilization
+
+3. **Routing Metrics**
+   - Successor list size
+   - DeBruijn entries (Koorde only)
+   - Finger table entries (Chord only)
+   - Routing table overhead
+
+## Output
+
+The benchmark generates:
+
+1. **Comparison Report** (`benchmark/results/comparison-report.txt`)
+   - Formatted table comparing Chord vs Koorde
+   - Performance analysis
+   - Recommendations
+
+2. **CSV Results**
+   - `benchmark/results/chord-results.csv`
+   - `benchmark/results/koorde-results.csv`
+   - Contains per-request data: timestamp, latency, status, cache status
+
+3. **JSON Summary** (`benchmark/results/summary.json`)
+   - Machine-readable summary
+   - All metrics in structured format
+
+4. **Logs**
+   - `logs/bench-chord-node*.log` - Chord node logs
+   - `logs/bench-koorde-node*.log` - Koorde node logs
+   - `benchmark/results/*-workload.log` - Workload generator logs
+
+## Example Output
+
+```
+============================================
+  Chord vs Koorde Benchmark Results
+============================================
+
+┌─────────────────────────────────────────────────────────────┐
+│                    Request Performance                       │
+├──────────────────────┬──────────────────┬───────────────────┤
+│ Metric               │ Chord            │ Koorde            │
+├──────────────────────┼──────────────────┼───────────────────┤
+│ Total Requests       │              1000 │              1000 │
+│ Success Rate         │           99.50% │           99.80% │
+│ Avg Latency (ms)     │            45.23 │            38.12 │
+│ P95 Latency (ms)     │           120.45 │            95.67 │
+└──────────────────────┴──────────────────┴───────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                    Cache Performance                        │
+├──────────────────────┬──────────────────┬───────────────────┤
+│ Cache Hit Rate       │           72.30% │           75.60% │
+│ Total Cache Entries  │               45 │               48 │
+└──────────────────────┴──────────────────┴───────────────────┘
+```
+
+## Expected Results
+
+### Chord Characteristics
+
+- **Routing Table**: O(log n) finger table entries
+- **Lookup Hops**: O(log n) ≈ 6-10 hops for 1000 nodes
+- **Memory**: Lower overhead (smaller routing table)
+- **Latency**: Slightly higher due to more hops
+
+### Koorde Characteristics
+
+- **Routing Table**: O(log² n) de Bruijn + successors
+- **Lookup Hops**: O(log₈ n) ≈ 3-4 hops for 1000 nodes (with k=8)
+- **Memory**: Higher overhead (larger routing table)
+- **Latency**: Lower due to fewer hops
+
+## Performance Trade-offs
+
+| Aspect | Chord | Koorde |
+|--------|-------|--------|
+| **Lookup Speed** | O(log n) hops | O(log₈ n) ≈ 3-4 hops |
+| **Memory Usage** | Lower (O(log n)) | Higher (O(log² n)) |
+| **Maintenance** | Finger table updates | De Bruijn maintenance |
+| **Fault Tolerance** | Successor list | Successor list + De Bruijn |
+| **Best For** | Memory-constrained | Latency-sensitive |
+
+## Troubleshooting
+
+### Issue: Nodes fail to start
+
+**Solution**: Check if ports are available:
+- Chord: 5000-5004 (gRPC), 9000-9004 (HTTP)
+- Koorde: 6000-6004 (gRPC), 10000-10004 (HTTP)
+
+### Issue: Low cache hit rate
+
+**Possible causes**:
+- Warmup time too short (increase `-WarmupSeconds`)
+- Too many unique URLs (reduce `--urls`)
+- Zipf exponent too low (increase `-ZipfExponent`)
+
+### Issue: High latency
+
+**Possible causes**:
+- Network issues
+- Origin server (httpbin.org) slow
+- Insufficient stabilization time
+
+## Advanced Usage
+
+### Custom Workload
+
+Modify the script to use custom URLs or adjust the workload pattern.
+
+### Long-Running Tests
+
+For production-like testing:
+```powershell
+.\benchmark-chord-vs-koorde.ps1 -NumRequests 10000 -Concurrency 50
+```
+
+### Stress Testing
+
+```powershell
+.\benchmark-chord-vs-koorde.ps1 -NumNodes 10 -NumRequests 5000 -Concurrency 100
+```
+
+## Interpreting Results
+
+### Latency Comparison
+
+- **Koorde typically wins** on lookup latency due to fewer hops
+- **Chord may win** on cache hit latency if routing table is smaller
+
+### Cache Hit Rate
+
+- Should be similar for both protocols (depends on workload, not protocol)
+- Differences indicate routing efficiency or node distribution
+
+### Memory Usage
+
+- **Chord**: Lower memory footprint
+- **Koorde**: Higher memory but better lookup performance
+
+## Next Steps
+
+1. Analyze the CSV files for detailed per-request metrics
+2. Compare P95/P99 latencies for tail latency analysis
+3. Test with different node counts to see scalability
+4. Adjust Zipf exponent to simulate different workload patterns
+
+---
+
+## Benchmark Report
+
+## Executive Summary
+This report compares the runtime behavior of two distributed hash table (DHT) designs — **Chord** and **Koorde** — across three experiments: latency scaling, cache hit rate under churn, and throughput under load. Key findings:
+
+- **Latency (8–32 nodes):** Chord exhibited lower median and tail latencies in our environment (≈19 ms avg) while Koorde showed higher average and P95/P99 latency despite theoretical hop-count advantages.
+- **Churn resilience:** Both Chord and Koorde preserved cache state far better than a simple modulo hash (Simple Hash), producing substantially higher hit rates during topology changes.
+- **Throughput:** Chord sustained higher RPS and scaled more stably under high concurrency in these tests.
+
+Interpretation: the experimental results reflect implementation and environment factors (per-hop cost, maintenance traffic, cloud quotas) that can mask asymptotic algorithmic advantages at small-to-medium cluster sizes. See the Limitations and Measurement Plan sections for recommended follow-ups to validate Koorde at larger scales.
+
+## Table of Contents
+- [Experiment 1: Latency Scaling (Koorde vs Chord)](#experiment-1-latency-scaling-koorde-vs-chord)
+- [Experiment 2: Cache Hit Rate Under 3-Phase Node Churn](#experiment-2-cache-hit-rate-under-3-phase-node-churn-4--3--4)
+- [Experiment 3: Throughput Benchmark (Koorde vs Chord)](#experiment-3-throughput-benchmark-koorde-vs-chord)
+
+---
+
+## Experiment 1: Latency Scaling (Koorde vs Chord)
+
+### Experiment Introduction
+This experiment empirically compares the latency characteristics of **Chord** and **Koorde** as the cluster size scales from 8 to 32 nodes. It aims to validate whether Koorde's theoretical routing efficiency ($O(\frac{\log N}{\log \log N})$) translates to lower latency in a realistic cloud environment (AWS EKS) compared to Chord ($O(\log N)$).
+
+### Methodology
+- **Tooling:** [Locust](https://locust.io/) was used for distributed load generation.
+- **Workload:** 50 concurrent users generating requests with a **Zipfian distribution** (alpha=1.2) to simulate realistic content popularity (hot keys).
+- **Traffic:** Mixed workload of `/cache` (DHT lookups) and `/health` checks, but analysis focuses on `/cache` endpoints.
+- **Environment:** AWS EKS (us-west-2) with a local in-cluster Nginx origin to isolate DHT routing latency from external network noise.
+
+### Experiment Settings
+| Parameter | Value |
+|-----------|-------|
+| **Environment** | AWS EKS (us-west-2) |
+| **Cluster Sizes** | 8, 16, 20, 26, 32 nodes |
+| **Protocols** | Chord, Koorde (k=2, 4, 8) |
+| **Workload** | 50 concurrent users, Zipfian distribution |
+| **Origin** | Local in-cluster Nginx (to isolate routing latency) |
+
+### Data (Results)
+
+#### Summary of Average Latency
+| Nodes | Protocol | Degree (k) | Avg Latency (ms) |
+|-------|----------|------------|------------------|
+| 8     | Chord    | N/A        | 18.8             |
+| 8     | Koorde   | 2          | 25.5             |
+| 8     | Koorde   | 8          | 24.8             |
+| 16    | Chord    | N/A        | 18.8             |
+| 16    | Koorde   | 2          | 37.4             |
+| 32    | Chord    | N/A        | 19.4             |
+| 32    | Koorde   | 2          | 54.9             |
+| 32    | Koorde   | 8          | 50.3             |
+
+#### Detailed Latency Distribution (32 Nodes)
+A deeper look at the tail latency reveals significant differences in stability.
+
+| Metric | Chord | Koorde (k=2) | Koorde (k=8) | Comparison |
+|--------|-------|--------------|--------------|------------|
+| **Median (P50)** | **19 ms** | 46 ms | 39 ms | Chord is ~2x faster |
+| **Average** | **19.7 ms** | 60.5 ms | 54.5 ms | Chord is ~2.7x faster |
+| **P95 Latency** | **25 ms** | 140 ms | 160 ms | Chord is **5.6x more stable** |
+| **P99 Latency** | **37 ms** | 190 ms | 240 ms | Koorde has high tail latency |
+| **Max Latency** | **96 ms** | 510 ms | 550 ms | - |
+
+*(Note: Throughput comparison is omitted for this specific experiment as tests were conducted in different network environments.)*
+
+
+### Analysis & Conclusions
+
+#### 1. Chord Dominance & Stability
+Chord consistently outperformed Koorde across all cluster sizes (8-32 nodes), maintaining a remarkably flat latency profile (~19ms avg, 25ms P95). The tight bound between P50 (19ms) and P99 (37ms) indicates that Chord's finger table implementation is highly efficient and predictable at this scale. The $O(\log N)$ hops in a 32-node cluster are few enough that the overhead is negligible.
+
+#### 2. Koorde Scaling & Tail Latency
+Koorde showed a clear increase in latency as nodes were added (25ms → 55ms). More critically, the **tail latency (P95/P99)** for Koorde is significantly higher (140ms+) than Chord. This suggests that while some lookups are fast, a significant portion of requests in Koorde suffer from longer routing paths or processing overheads. This could be due to the complexity of de Bruijn graph traversal or "imaginary node" calculations in a real distributed setting.
+
+#### 3. Impact of Degree (k) - Theory vs Practice
+The theory that higher degree reduces path length was **validated** in the average case. At 32 nodes, Koorde with $k=8$ (Avg 50.3ms) was faster than $k=2$ (Avg 54.9ms), confirming that increasing the de Bruijn degree reduces network diameter. However, the **P95 latency** for $k=8$ was actually slightly worse (160ms vs 140ms), suggesting that the complexity of managing more neighbors or routing logic might introduce variance that affects tail latency.
+
+#### 4. Theoretical vs Practical Gap
+While Koorde has a superior asymptotic bound ($O(\frac{\log N}{\log \log N})$), the constant factors in implementation and network RTT dominate at the scale of 32 nodes. Chord's simpler logic and efficient pointer chasing proved superior in this specific AWS EKS environment. Koorde's benefits might only become apparent at much larger scales (e.g., thousands of nodes) where the logarithmic difference in hop count becomes significant enough to outweigh the per-hop overhead.
+
+### Limitations
+- **Cluster Size Constraints:** The AWS Learner Lab environment used for EKS deployment imposes a hard limit of 9 EC2 instances per cluster. Even with `t3.large` nodes, this restricts the maximum practical DHT size to about 35–40 nodes (with 3–4 pods per node).
+- **Scaling Attempts:** Attempts to scale the cluster to 40 nodes were unsuccessful; the cluster never became fully ready due to resource and quota limitations.
+- **Cloud Lab Environment:** Results may not generalize to larger-scale or production-grade EKS clusters with higher quotas and more powerful instance types. The observed scaling and latency trends are valid only within the tested range (up to 32 nodes).
+- **Network and Resource Contention:** The shared nature of the Learner Lab environment may introduce additional network or resource contention not present in dedicated or production EKS clusters.
+- **Algorithmic Superiority Not Fully Demonstrated:** Due to the cluster size restrictions, we were unable to empirically demonstrate the full theoretical advantage of Koorde's $O(\frac{\log N}{\log \log N})$ routing. To observe the true scaling benefits and potential crossover point where Koorde outperforms Chord, experiments with much larger clusters (e.g., 128, 256, 512, or 1024 nodes) would be necessary. The current results reflect only the small-to-medium scale regime imposed by the AWS Learner Lab environment.
+
+### Measurement Plan & Next Experiments
+
+- **Goal:** determine whether Koorde's asymptotic hop-count advantage yields lower observed latency at larger N, and measure the crossover point where Koorde becomes faster in practice.
+
+- **Immediate measurements to add** (instrumentation):
+	- Per-request hop count (log hops for each lookup) and a per-request hop histogram.
+	- Per-hop timing: timestamps at hop entry/exit so we can separate network RTT from processing overhead.
+	- Node resource metrics (CPU, memory, network TX/RX) sampled at 1s resolution.
+	- Background maintenance traffic rates (messages/sec per node) to capture routing table churn overhead.
+	- P50/P95/P99 and tail distributions per-node and overall.
+
+- **Suggested experiments to validate asymptotic behavior:**
+	1. **Logical scaling (fast, low-cost):** run many logical DHT nodes per pod (virtual nodes) to emulate N=128/256/512/1024 while reusing the available EC2 instances. This reveals protocol behavior without requiring large cloud quotas.
+	2. **Simulator/emulator:** use a DHT event-driven simulator to validate algorithmic hop counts and latency under controlled per-hop costs and network models.
+	3. **Higher-quota cloud run:** if possible, repeat full EKS runs on a higher-quota account (or larger instance types) and target N = 128/256/512 to observe real network effects.
+	4. **Netem amplification:** apply in-cluster artificial per-hop RTT (using `tc`/`netem`) to amplify the effect of hop-count differences so reductions in hops produce measurable latency improvements.
+
+- **Quick validation commands (examples):**
+
+```powershell
+# (1) Run nodes with multiple logical instances: adjust the pod command to spawn M logical nodes per pod
+kubectl set image deployment/my-node my-node-image:latest
+# (2) Apply netem to a node interface (example, run inside a privileged pod)
+tc qdisc add dev eth0 root netem delay 15ms
+```
+
+---
+
+## Experiment 2: Cache Hit Rate Under 3-Phase Node Churn (4 → 3 → 4)
+
+### Experiment Introduction
+This experiment evaluates **cache hit rate** stability under **node churn** for three routing strategies:
+**Simple Hash** (static modulo), **Chord**, and **Koorde** (consistent hashing).
+
+### Experiment Settings
+| Parameter              | Value                                    |
+| ---------------------- | ---------------------------------------- |
+| **Node churn pattern** | 4 → 3 → 4 (remove 1 node, then add back) |
+| **Unique URLs**        | 200                                      |
+| **Requests per phase** | 300                                      |
+| **Total requests**     | 900                                      |
+| **Request rate**       | 50 req/s                                 |
+| **Zipf alpha**         | 1.2                                      |
+| **Koorde degree**      | 4                                        |
+
+### Data (Results)
+
+#### Final Ranking (Hit Rate)
+| Rank    | Protocol        | Avg Hit Rate | Failures | Key Redistribution | Verdict                    |
+| ------- | --------------- | ------------ | -------- | ------------------ | -------------------------- |
+| **1st** | **Chord**       | **38.2%**    | 0        | ~25%               | BEST - consistent hashing  |
+| **2nd** | **Koorde**      | **35.3%**    | 0        | ~25%               | Great - consistent hashing |
+| **3rd** | **Simple Hash** | **19.0%**    | 0        | ~75%               | WORST - key redistribution |
+
+#### Cache Hit Rate Progression
+
+- **Chord** highest hit rate (consistent hashing preserves cache).
+- **Koorde** close behind (consistent hashing preserves cache).
+- **Simple Hash** lowest (major remapping on churn).
+
+#### Observed Hit Rate by Phase
+| Protocol    | Phase 1 | Phase 2 | Phase 3 | Explanation                                |
+| ----------- | ------- | ------- | ------- | ------------------------------------------ |
+| Simple Hash | 19.7%   | 16.3%   | 21.0%   | Lowest - ~75% cache invalidated each phase |
+| Chord       | 33.3%   | 46.7%   | 34.7%   | Highest - ~75% cache preserved             |
+| Koorde      | 31.7%   | 41.3%   | 33.0%   | Good - ~75% cache preserved                |
+
+### Analysis & Conclusions
+- **Consistent Hashing Wins:** Both Chord and Koorde preserved ~75% of the cache during churn, leading to significantly higher hit rates than Simple Hash.
+- **Simple Hash Failure:** Simple Hash invalidated ~75% of keys with every topology change, making it unsuitable for dynamic environments.
+- **Recommendation:** For dynamic clusters, **Chord or Koorde** is required. Simple Hash is only acceptable for static clusters.
+
+---
+
+## Experiment 3: Throughput Benchmark (Koorde vs Chord)
+
+### Summary
+This experiment compares how Koorde and Chord scale under increasing concurrent load.
+
+### Setup
+- **Users tested**: 50, 100, 200, 500, 1000, 2000, 4000
+- **Metric**: throughput (Requests Per Second, RPS)
+- **Conditions**: Koorde and Chord run under identical conditions
+- **Note**: X-axis is equally spaced for clarity and does not represent actual numeric spacing between user counts
+
+### Key Observations
+- **Chord** achieves significantly higher throughput, saturating around ~3000 RPS.
+- **Koorde** saturates earlier (~2200 RPS) and declines at high load (4000 users).
+- **Chord** demonstrates better stability and scalability under high concurrency.
+- **Koorde** shows more sensitivity to overload conditions.
+
+---
+
+## Final Conclusion
+
+Across all three experiments, **Chord** demonstrated superior performance and stability in this implementation:
+1.  **Latency:** Chord maintained lower, flatter latency as the cluster scaled.
+2.  **Stability:** Chord handled node churn with the highest cache hit rate.
+3.  **Throughput:** Chord sustained higher RPS loads before saturation.
+
+**Koorde** validated its theoretical properties (higher degree = lower latency) and performed well in churn (consistent hashing), but its implementation overhead appears higher than Chord's at these scales (up to 32 nodes). For production use at this scale, **Chord** is the recommended protocol.

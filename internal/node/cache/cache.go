@@ -12,6 +12,7 @@ type Entry struct {
 	URL         string
 	Content     []byte
 	ContentType string
+	StatusCode  int
 	Expiration  time.Time
 	Size        int
 	CreatedAt   time.Time
@@ -21,11 +22,11 @@ type Entry struct {
 
 // WebCache is a thread-safe LRU cache with TTL expiration and capacity limits
 type WebCache struct {
-	capacityBytes int                 // Maximum cache size in bytes
-	entries       map[string]*Entry   // Map for O(1) lookup
-	lru           *list.List          // Doubly-linked list for LRU
-	mu            sync.RWMutex        // Reader/writer lock
-	currentBytes  int                 // Current cache size in bytes
+	capacityBytes int               // Maximum cache size in bytes
+	entries       map[string]*Entry // Map for O(1) lookup
+	lru           *list.List        // Doubly-linked list for LRU
+	mu            sync.RWMutex      // Reader/writer lock
+	currentBytes  int               // Current cache size in bytes
 
 	// Metrics
 	hits      int64
@@ -75,7 +76,7 @@ func (wc *WebCache) Get(url string) (*Entry, bool) {
 
 // Put inserts or updates an entry in the cache
 // If the cache is full, it evicts the least recently used entries
-func (wc *WebCache) Put(url string, content []byte, contentType string, ttl time.Duration) error {
+func (wc *WebCache) Put(url string, content []byte, contentType string, ttl time.Duration, statusCode int) error {
 	wc.mu.Lock()
 	defer wc.mu.Unlock()
 
@@ -89,6 +90,7 @@ func (wc *WebCache) Put(url string, content []byte, contentType string, ttl time
 
 		existing.Content = content
 		existing.ContentType = contentType
+		existing.StatusCode = statusCode
 		existing.Expiration = time.Now().Add(ttl)
 		existing.Size = size
 		existing.AccessCount++
@@ -118,6 +120,7 @@ func (wc *WebCache) Put(url string, content []byte, contentType string, ttl time
 		URL:         url,
 		Content:     content,
 		ContentType: contentType,
+		StatusCode:  statusCode,
 		Expiration:  time.Now().Add(ttl),
 		Size:        size,
 		CreatedAt:   time.Now(),
@@ -201,15 +204,15 @@ func (wc *WebCache) GetMetrics() CacheMetrics {
 	}
 
 	return CacheMetrics{
-		Hits:         wc.hits,
-		Misses:       wc.misses,
-		Evictions:    wc.evictions,
-		Stores:       wc.stores,
-		HitRate:      hitRate,
-		EntryCount:   len(wc.entries),
-		SizeBytes:    wc.currentBytes,
+		Hits:          wc.hits,
+		Misses:        wc.misses,
+		Evictions:     wc.evictions,
+		Stores:        wc.stores,
+		HitRate:       hitRate,
+		EntryCount:    len(wc.entries),
+		SizeBytes:     wc.currentBytes,
 		CapacityBytes: wc.capacityBytes,
-		Utilization:  float64(wc.currentBytes) / float64(wc.capacityBytes),
+		Utilization:   float64(wc.currentBytes) / float64(wc.capacityBytes),
 	}
 }
 

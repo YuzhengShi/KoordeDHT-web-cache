@@ -1,14 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: koorde-cache-http
-  namespace: koorde-cache
+  name: dht-cache-http
   annotations:
-    # Network Load Balancer (recommended for high throughput)
-    service.beta.kubernetes.io/aws-load-balancer-type: "external"
-    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
-    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"  # Network Load Balancer
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"  # Route directly to pods
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"  # Make publicly accessible
     service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
     
     # Health checks
     service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "http"
@@ -16,23 +15,22 @@ metadata:
     service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "8080"
     service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "10"
     service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "5"
-    service.beta.kubernetes.io/aws-load-balancer-healthy-threshold: "2"
-    service.beta.kubernetes.io/aws-load-balancer-unhealthy-threshold: "2"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "2"
     
     # Additional settings
     service.beta.kubernetes.io/aws-load-balancer-attributes: |
       deletion_protection.enabled=false,
       access_logs.s3.enabled=false
   labels:
-    app: koorde-node
+    app: dht-node
 spec:
   type: LoadBalancer
   selector:
-    app: koorde-node
+    app: dht-node
   ports:
   - name: http
     port: 80
     targetPort: 8080
     protocol: TCP
   sessionAffinity: None  # Round-robin distribution
-

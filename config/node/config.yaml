@@ -12,6 +12,7 @@ logger:
     compress: false        # Compress old log files on rotation (true | false)
 
 dht:
+  protocol: "koorde"     # DHT protocol: koorde | chord
   idBits: 66             # Identifier space size (keyspace = 2^idBits)
   mode: "private"        # Network mode: public (real network) | private (local/isolated)
 

@@ -1,26 +1,27 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: koorde-node
-  namespace: koorde-cache
+  name: dht-node
   labels:
-    app: koorde-node
+    app: dht-node
 spec:
-  serviceName: koorde-headless
+  serviceName: dht-headless
   replicas: 10
   selector:
     matchLabels:
-      app: koorde-node
+      app: dht-node
   podManagementPolicy: Parallel
   template:
     metadata:
       labels:
-        app: koorde-node
+        app: dht-node
     spec:
       containers:
-      - name: koorde
-        image: flaviosimonelli/koorde-node:latest
+      - name: dht-node
+        image: 007438440430.dkr.ecr.us-west-2.amazonaws.com/koorde-node:latest
         imagePullPolicy: Always
+        command: ["/bin/bash", "/deploy/eks/entrypoint-chord.sh"]
+        args: ["/app/dht-node"]
         ports:
         - containerPort: 4000
           name: grpc
@@ -45,12 +46,9 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        # Bootstrap to first 3 pods for initial ring
-        - name: BOOTSTRAP_PEERS
-          value: "koorde-node-0.koorde-headless.koorde-cache.svc.cluster.local:4000,koorde-node-1.koorde-headless.koorde-cache.svc.cluster.local:4000,koorde-node-2.koorde-headless.koorde-cache.svc.cluster.local:4000"
         envFrom:
         - configMapRef:
-            name: koorde-config
+            name: dht-config
         resources:
           requests:
             memory: "512Mi"
@@ -62,17 +60,17 @@ spec:
           httpGet:
             path: /health
             port: 8080
-          initialDelaySeconds: 30
+          initialDelaySeconds: 60  # Increased to allow bootstrap retry
           periodSeconds: 10
           timeoutSeconds: 5
-          failureThreshold: 3
+          failureThreshold: 6      # Allow more failures before restart
         readinessProbe:
           httpGet:
             path: /health
             port: 8080
-          initialDelaySeconds: 15
+          initialDelaySeconds: 30
           periodSeconds: 5
           timeoutSeconds: 3
-          failureThreshold: 2
+          failureThreshold: 3
       terminationGracePeriodSeconds: 30
 
