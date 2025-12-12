@@ -1,5 +1,14 @@
 # Koorde vs Chord DHT Performance Benchmark Report
 
+## Executive Summary
+This report compares the runtime behavior of two distributed hash table (DHT) designs — **Chord** and **Koorde** — across three experiments: latency scaling, cache hit rate under churn, and throughput under load. Key findings:
+
+- **Latency (8–32 nodes):** Chord exhibited lower median and tail latencies in our environment (≈19 ms avg) while Koorde showed higher average and P95/P99 latency despite theoretical hop-count advantages.
+- **Churn resilience:** Both Chord and Koorde preserved cache state far better than a simple modulo hash (Simple Hash), producing substantially higher hit rates during topology changes.
+- **Throughput:** Chord sustained higher RPS and scaled more stably under high concurrency in these tests.
+
+Interpretation: the experimental results reflect implementation and environment factors (per-hop cost, maintenance traffic, cloud quotas) that can mask asymptotic algorithmic advantages at small-to-medium cluster sizes. See the Limitations and Measurement Plan sections for recommended follow-ups to validate Koorde at larger scales.
+
 ## Table of Contents
 - [Experiment 1: Latency Scaling (Koorde vs Chord)](#experiment-1-latency-scaling-koorde-vs-chord)
 - [Experiment 2: Cache Hit Rate Under 3-Phase Node Churn](#experiment-2-cache-hit-rate-under-3-phase-node-churn-4--3--4)
@@ -79,6 +88,34 @@ While Koorde has a superior asymptotic bound ($O(\frac{\log N}{\log \log N})$), 
 - **Cloud Lab Environment:** Results may not generalize to larger-scale or production-grade EKS clusters with higher quotas and more powerful instance types. The observed scaling and latency trends are valid only within the tested range (up to 32 nodes).
 - **Network and Resource Contention:** The shared nature of the Learner Lab environment may introduce additional network or resource contention not present in dedicated or production EKS clusters.
 - **Algorithmic Superiority Not Fully Demonstrated:** Due to the cluster size restrictions, we were unable to empirically demonstrate the full theoretical advantage of Koorde's $O(\frac{\log N}{\log \log N})$ routing. To observe the true scaling benefits and potential crossover point where Koorde outperforms Chord, experiments with much larger clusters (e.g., 128, 256, 512, or 1024 nodes) would be necessary. The current results reflect only the small-to-medium scale regime imposed by the AWS Learner Lab environment.
+
+### Measurement Plan & Next Experiments
+
+- **Goal:** determine whether Koorde's asymptotic hop-count advantage yields lower observed latency at larger N, and measure the crossover point where Koorde becomes faster in practice.
+
+- **Immediate measurements to add** (instrumentation):
+	- Per-request hop count (log hops for each lookup) and a per-request hop histogram.
+	- Per-hop timing: timestamps at hop entry/exit so we can separate network RTT from processing overhead.
+	- Node resource metrics (CPU, memory, network TX/RX) sampled at 1s resolution.
+	- Background maintenance traffic rates (messages/sec per node) to capture routing table churn overhead.
+	- P50/P95/P99 and tail distributions per-node and overall.
+
+- **Suggested experiments to validate asymptotic behavior:**
+	1. **Logical scaling (fast, low-cost):** run many logical DHT nodes per pod (virtual nodes) to emulate N=128/256/512/1024 while reusing the available EC2 instances. This reveals protocol behavior without requiring large cloud quotas.
+	2. **Simulator/emulator:** use a DHT event-driven simulator to validate algorithmic hop counts and latency under controlled per-hop costs and network models.
+	3. **Higher-quota cloud run:** if possible, repeat full EKS runs on a higher-quota account (or larger instance types) and target N = 128/256/512 to observe real network effects.
+	4. **Netem amplification:** apply in-cluster artificial per-hop RTT (using `tc`/`netem`) to amplify the effect of hop-count differences so reductions in hops produce measurable latency improvements.
+
+- **Quick validation commands (examples):**
+
+```powershell
+# (1) Run nodes with multiple logical instances: adjust the pod command to spawn M logical nodes per pod
+kubectl set image deployment/my-node my-node-image:latest
+# (2) Apply netem to a node interface (example, run inside a privileged pod)
+tc qdisc add dev eth0 root netem delay 15ms
+```
+
+The above steps let you observe Koorde's theoretical benefits without needing dozens of physical machines. If you'd like, I can prepare the instrumentation patches (logging per-hop counts and timestamps) and a short script to spawn logical nodes per pod, then run a simulated N sweep (128→1024) and produce plots similar to the existing latency charts.
 
 ---
 
