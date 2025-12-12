@@ -73,6 +73,13 @@ The theory that higher degree reduces path length was **validated** in the avera
 #### 4. Theoretical vs Practical Gap
 While Koorde has a superior asymptotic bound ($O(\frac{\log N}{\log \log N})$), the constant factors in implementation and network RTT dominate at the scale of 32 nodes. Chord's simpler logic and efficient pointer chasing proved superior in this specific AWS EKS environment. Koorde's benefits might only become apparent at much larger scales (e.g., thousands of nodes) where the logarithmic difference in hop count becomes significant enough to outweigh the per-hop overhead.
 
+### Limitations
+- **Cluster Size Constraints:** The AWS Learner Lab environment used for EKS deployment imposes a hard limit of 9 EC2 instances per cluster. Even with `t3.large` nodes, this restricts the maximum practical DHT size to about 35–40 nodes (with 3–4 pods per node).
+- **Scaling Attempts:** Attempts to scale the cluster to 40 nodes were unsuccessful; the cluster never became fully ready due to resource and quota limitations.
+- **Cloud Lab Environment:** Results may not generalize to larger-scale or production-grade EKS clusters with higher quotas and more powerful instance types. The observed scaling and latency trends are valid only within the tested range (up to 32 nodes).
+- **Network and Resource Contention:** The shared nature of the Learner Lab environment may introduce additional network or resource contention not present in dedicated or production EKS clusters.
+- **Algorithmic Superiority Not Fully Demonstrated:** Due to the cluster size restrictions, we were unable to empirically demonstrate the full theoretical advantage of Koorde's $O(\frac{\log N}{\log \log N})$ routing. To observe the true scaling benefits and potential crossover point where Koorde outperforms Chord, experiments with much larger clusters (e.g., 128, 256, 512, or 1024 nodes) would be necessary. The current results reflect only the small-to-medium scale regime imposed by the AWS Learner Lab environment.
+
 ---
 
 ## Experiment 2: Cache Hit Rate Under 3-Phase Node Churn (4 → 3 → 4)
