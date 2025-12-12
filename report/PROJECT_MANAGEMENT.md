@@ -3,7 +3,7 @@
 ## 1. Project Overview & Inspiration
 This project evaluates the performance of distributed hash tables (DHTs) in a realistic cloud environment. It was inspired by:
 1.  **The Koorde Paper (Kaashoek & Karger, 2003):** Proposed a degree-optimal DHT with $O(\log N / \log \log N)$ diameter.
-2.  **Existing Benchmarks:** Online comparisons of Chord vs. Kademlia, which we aimed to extend by validating Koorde's theoretical properties.
+2.  **Existing Benchmarks:** Online comparisons of Chord vs. Kademlia, (notably https://github.com/macvincent/slbdch), which we aimed to extend by validating Koorde's theoretical properties.
 
 **Goal:** Move beyond simple algorithmic simulation to a full systems engineering evaluation, measuring **latency**, **cache hit rate**, and **throughput** in a containerized, orchestrated environment.
 
