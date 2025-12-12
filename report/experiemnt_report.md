@@ -19,7 +19,7 @@ Interpretation: the experimental results reflect implementation and environment 
 ## Experiment 1: Latency Scaling (Koorde vs Chord)
 
 ### Experiment Introduction
-This experiment empirically compares the latency characteristics of **Chord** and **Koorde** as the cluster size scales from 8 to 32 nodes. It aims to validate whether Koorde's theoretical routing efficiency ($O(\frac{\log N}{\log \log N})$) translates to lower latency in a realistic cloud environment (AWS EKS) compared to Chord ($O(\log N)$).
+This experiment empirically compares the latency characteristics of **Chord** and **Koorde** as the cluster size scales from 8 to 32 nodes. It aims to validate whether Koorde's theoretical routing efficiency $O(\frac{\log N}{\log \log N})$ translates to lower latency in a realistic cloud environment (AWS EKS) compared to Chord $O(\log N)$ 
 
 ### Methodology
 - **Tooling:** [Locust](https://locust.io/) was used for distributed load generation.
