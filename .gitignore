@@ -45,3 +45,12 @@ __pycache__/
 results*.csv
 pids.txt
 *-log.txt
+
+# LocalStack runtime state (docker-compose mounts it as ./volume)
+volume/
+
+# Terraform state and local variables
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+.terraform/
