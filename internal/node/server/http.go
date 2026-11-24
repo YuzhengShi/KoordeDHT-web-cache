@@ -5,6 +5,7 @@ import (
 	"KoordeDHT/internal/logger"
 	"KoordeDHT/internal/node/cache"
 	"KoordeDHT/internal/node/dht"
+	"KoordeDHT/internal/node/telemetry/lookuptrace"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -30,6 +31,7 @@ type HTTPCacheServer struct {
 	server               *http.Server
 	lgr                  logger.Logger
 	grpcToHTTPPortOffset int
+	lookupLog            *lookupCSV // optional per-lookup CSV log (nil = off)
 }
 
 // NewHTTPCacheServer creates a new HTTP cache server instance
@@ -55,7 +57,15 @@ func NewHTTPCacheServer(
 		}
 	}
 
+	// Optional per-lookup CSV log, off unless KOORDE_LOOKUP_CSV is set.
+	lookupLog, csvErr := newLookupCSVFromEnv()
+	if csvErr != nil {
+		lgr.Warn("NewHTTPCacheServer: lookup CSV log disabled",
+			logger.F("env", lookupCSVEnv), logger.F("err", csvErr))
+	}
+
 	return &HTTPCacheServer{
+		lookupLog:            lookupLog,
 		node:                 node,
 		cache:                webCache,
 		hotspotDetector:      hotspotDetector,
@@ -147,13 +157,17 @@ func (s *HTTPCacheServer) handleCacheRequest(w http.ResponseWriter, r *http.Requ
 
 	// STEP 2: DHT Lookup (find responsible node)
 	var responsible *domain.Node
+	// lookupHops is the number of node-to-node RPC hops spent by the lookups
+	// this node ran for this request (-1: no lookup was run here, e.g. a
+	// forwarded request). Reported in the X-Lookup-Hops header.
+	lookupHops := -1
 	if !isResponsible {
 		// Only do lookup if we haven't been told we're responsible
 		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 		defer cancel()
 
 		var err error
-		responsible, err = s.node.LookUp(ctx, urlHash)
+		responsible, err = s.timedLookUp(ctx, urlHash, &lookupHops)
 		if err != nil {
 			s.lgr.Warn("DHT lookup failed, trying fallback strategies",
 				logger.F("url", url),
@@ -272,7 +286,7 @@ func (s *HTTPCacheServer) handleCacheRequest(w http.ResponseWriter, r *http.Requ
 					ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 					defer cancel()
 
-					retryResponsible, retryErr := s.node.LookUp(ctx, urlHash)
+					retryResponsible, retryErr := s.timedLookUp(ctx, urlHash, &lookupHops)
 					if retryErr == nil && retryResponsible != nil && !retryResponsible.ID.Equal(selfNode.ID) {
 						targetNode = retryResponsible
 						s.lgr.Info("Koorde retry lookup succeeded",
@@ -355,7 +369,7 @@ func (s *HTTPCacheServer) handleCacheRequest(w http.ResponseWriter, r *http.Requ
 			logger.FNode("responsible_from_lookup", responsible),
 			logger.FNode("forward_target", targetNode))
 
-		s.proxyToNode(w, r, url, targetNode.Addr, "MISS-DHT", start)
+		s.proxyToNode(w, r, url, targetNode.Addr, "MISS-DHT", start, lookupHops)
 		return
 	}
 
@@ -375,6 +389,7 @@ func (s *HTTPCacheServer) handleCacheRequest(w http.ResponseWriter, r *http.Requ
 		w.Header().Set("X-Cache", "HIT-LOCAL")
 		w.Header().Set("X-Node-ID", s.node.Self().ID.ToHexString(true))
 		w.Header().Set("X-Latency-Ms", fmt.Sprintf("%.2f", time.Since(start).Seconds()*1000))
+		setLookupHopsHeader(w, lookupHops)
 		w.WriteHeader(statusCode)
 		w.Write(entry.Content)
 		return
@@ -393,7 +408,7 @@ func (s *HTTPCacheServer) handleCacheRequest(w http.ResponseWriter, r *http.Requ
 
 		randomNode := s.pickRandomNode()
 		if randomNode != "" && randomNode != s.node.Self().Addr {
-			s.proxyToNode(w, r, url, randomNode, "MISS-HOT", start)
+			s.proxyToNode(w, r, url, randomNode, "MISS-HOT", start, lookupHops)
 			return
 		}
 		// Fall through to fetch from origin if no other node available
@@ -430,6 +445,7 @@ func (s *HTTPCacheServer) handleCacheRequest(w http.ResponseWriter, r *http.Requ
 	w.Header().Set("X-Cache", "MISS-ORIGIN")
 	w.Header().Set("X-Node-ID", s.node.Self().ID.ToHexString(true))
 	w.Header().Set("X-Latency-Ms", fmt.Sprintf("%.2f", time.Since(start).Seconds()*1000))
+	setLookupHopsHeader(w, lookupHops)
 	w.WriteHeader(statusCode)
 	w.Write(content)
 
@@ -498,6 +514,33 @@ func (s *HTTPCacheServer) pickRandomNode() string {
 	return nodes[rand.Intn(len(nodes))]
 }
 
+// setLookupHopsHeader sets X-Lookup-Hops when a lookup was run (hops >= 0).
+func setLookupHopsHeader(w http.ResponseWriter, hops int) {
+	if hops >= 0 {
+		w.Header().Set("X-Lookup-Hops", strconv.Itoa(hops))
+	}
+}
+
+// timedLookUp runs node.LookUp with hop counting and, if enabled, writes one
+// CSV row. On success the hops of this attempt are added to *hops (starting
+// from -1 meaning "no lookup yet"), so a retry reports the sum of its attempts.
+func (s *HTTPCacheServer) timedLookUp(ctx context.Context, id domain.ID, hops *int) (*domain.Node, error) {
+	ctx, counter := lookuptrace.Begin(ctx)
+	begin := time.Now()
+	node, err := s.node.LookUp(ctx, id)
+	total := time.Since(begin)
+	if err == nil {
+		if *hops < 0 {
+			*hops = 0
+		}
+		*hops += counter.Hops()
+	}
+	if s.lookupLog != nil {
+		s.lookupLog.write(s.node.RoutingMetrics().Protocol, id, counter, total, err == nil)
+	}
+	return node, err
+}
+
 // proxyToNode forwards the request to another node via HTTP
 func (s *HTTPCacheServer) proxyToNode(
 	w http.ResponseWriter,
@@ -506,6 +549,7 @@ func (s *HTTPCacheServer) proxyToNode(
 	nodeAddr string, // e.g., "10.0.1.89:4000" (gRPC addr)
 	cacheStatus string,
 	start time.Time,
+	lookupHops int, // hops of the lookup run by this node, or -1
 ) {
 	// Extract host and gRPC port from "host:port" (gRPC address format)
 	host, portStr, err := net.SplitHostPort(nodeAddr)
@@ -608,6 +652,7 @@ func (s *HTTPCacheServer) proxyToNode(
 	w.Header().Set("X-Responsible-Node", nodeAddr)
 	w.Header().Set("X-Entry-Node", s.node.Self().Addr)
 	w.Header().Set("X-Latency-Ms", fmt.Sprintf("%.2f", time.Since(start).Seconds()*1000))
+	setLookupHopsHeader(w, lookupHops)
 
 	// Copy additional headers from proxy response
 	if cacheHdr := resp.Header.Get("X-Cache"); cacheHdr != "" {

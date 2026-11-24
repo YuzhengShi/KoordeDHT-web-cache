@@ -5,6 +5,7 @@ import (
 	dhtv1 "KoordeDHT/internal/api/dht/v1"
 	"KoordeDHT/internal/logger"
 	"KoordeDHT/internal/node/dht"
+	"KoordeDHT/internal/node/telemetry/lookuptrace"
 	"fmt"
 	"net"
 
@@ -43,8 +44,13 @@ func New(lis net.Listener, n dht.DHTNode, grpcOpts []grpc.ServerOption, srvOpts 
 		return nil, fmt.Errorf("server: node must not be nil")
 	}
 
+	// The lookup-trace interceptor counts FindSuccessor hops. It is added in
+	// front of the caller's options and works next to (not instead of) a
+	// stats handler such as otelgrpc's.
+	allOpts := append([]grpc.ServerOption{grpc.ChainUnaryInterceptor(lookuptrace.ServerInterceptor())}, grpcOpts...)
+
 	s := &Server{
-		grpcServer: grpc.NewServer(grpcOpts...),
+		grpcServer: grpc.NewServer(allOpts...),
 		listener:   lis,
 		lgr:        &logger.NopLogger{}, // default: no logging
 	}

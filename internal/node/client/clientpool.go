@@ -4,6 +4,7 @@ import (
 	dhtv1 "KoordeDHT/internal/api/dht/v1"
 	"KoordeDHT/internal/domain"
 	"KoordeDHT/internal/logger"
+	"KoordeDHT/internal/node/telemetry/lookuptrace"
 	"fmt"
 	"sync"
 	"time"
@@ -44,8 +45,24 @@ type Pool struct {
 	lgr            logger.Logger
 	mu             sync.Mutex
 	clients        map[string]*refConn
-	closed         bool          // indicates if the pool has been closed
-	failureTimeout time.Duration // timeout for RPC calls (after which the server is considered unresponsive)
+	closed         bool              // indicates if the pool has been closed
+	failureTimeout time.Duration     // timeout for RPC calls (after which the server is considered unresponsive)
+	dialOpts       []grpc.DialOption // extra dial options (e.g. a custom dialer in tests)
+}
+
+// dialOptions returns the options used for every connection of the pool:
+// plaintext, the otelgrpc stats handler, the lookup-trace interceptor that
+// counts FindSuccessor hops, and any extra options given with WithDialOptions.
+func (p *Pool) dialOptions() []grpc.DialOption {
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()), // plaintext, no TLS
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler(
+			otelgrpc.WithTracerProvider(otel.GetTracerProvider()),
+			otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
+		)),
+		grpc.WithChainUnaryInterceptor(lookuptrace.ClientInterceptor()),
+	}
+	return append(opts, p.dialOpts...)
 }
 
 // New creates a new empty Pool. It accepts a list of functional options
@@ -97,11 +114,7 @@ func (p *Pool) AddRef(addr string) error {
 	// otherwise create new connection
 	conn, dialErr := grpc.NewClient(
 		addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()), // plaintext, no TLS
-		grpc.WithStatsHandler(otelgrpc.NewClientHandler(
-			otelgrpc.WithTracerProvider(otel.GetTracerProvider()),
-			otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-		)),
+		p.dialOptions()...,
 	)
 	if dialErr != nil {
 		p.mu.Unlock()
@@ -151,11 +164,7 @@ func (p *Pool) DialEphemeral(addr string) (dhtv1.DHTClient, *grpc.ClientConn, er
 	}
 	conn, err := grpc.NewClient(
 		addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()), // plaintext, no TLS
-		grpc.WithStatsHandler(otelgrpc.NewClientHandler(
-			otelgrpc.WithTracerProvider(otel.GetTracerProvider()),
-			otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-		)),
+		p.dialOptions()...,
 	)
 	if err != nil {
 		p.lgr.Error("DialEphemeral: failed to dial",
