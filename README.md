@@ -7,6 +7,8 @@ Go implementation of a distributed web cache backed by two DHT routing layers:
 
 The project includes local tooling, AWS EKS manifests for both protocols, and a set of completed benchmark experiments with plots and reports.
 
+It is built on an existing open-source Koorde implementation: [Credits](#credits) says what comes from it and what this repository adds.
+
 ## Quick Links
 
 - Local development/testing: [Local Testing Guide](#local-testing-guide)
@@ -94,6 +96,23 @@ See the [Benchmark Guide](#benchmark-guide) for full parameter documentation and
 - Report: [Benchmark Report](#benchmark-report)
 - Comparison snapshot: `BENCHMARK_COMPARISON_REPORT.md`
 - Plots: `test/results/plots/latency_vs_nodes.png`, `test/results/plots/rps_vs_nodes.png`
+
+---
+
+## Credits
+
+This repository extends an existing open-source Go implementation of Koorde, [flavio-simonelli/KoordeDHT](https://github.com/flavio-simonelli/KoordeDHT), which the first commit here imported.
+That repository has no license file; this one credits it and claims no rights in its code.
+
+**From the upstream repository:** the gRPC node and its API (`proto/`, `internal/api/`), Koorde's de Bruijn routing (`internal/node/logicnode/`, `internal/node/routingtable/`), bootstrap, storage, telemetry, logging, configuration loading, and the DHT client and tester (`cmd/client/`, `cmd/tester/`, `internal/client/`).
+Of the 65 Go files on `main`, 39 are unchanged from it and 12 are modified versions.
+
+**Added in this repository** (Yuzheng Shi with one teammate):
+
+- the web-cache layer: `internal/node/cache/` (cache and hotspot detection), the HTTP cache and metrics endpoints in `internal/node/server/http.go`, the interactive cache client (`cmd/cache-client/`) and the Zipf workload generator (`cmd/cache-workload/`);
+- a Chord implementation, `internal/node/chord/` (finger table, stabilization, tests), and the common DHT interface `internal/node/dht/` that lets either protocol run behind the cache;
+- the changes to the node, server, config, bootstrap and domain packages that connect them, and the lookup metrics;
+- the AWS EKS deployment (`deploy/eks/`), the local multi-node configurations (`config/local-cluster/`), the LocalStack and Locust setups, and the benchmark experiments and report in this README.
 
 ---
 
