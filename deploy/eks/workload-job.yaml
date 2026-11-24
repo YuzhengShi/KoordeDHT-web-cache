@@ -33,7 +33,7 @@ spec:
             --urls 1000 \
             --requests 10000 \
             --rate 100 \
-            --zipf 0.9 \
+            --zipf 1.2 \
             --output /results/workload-results.csv
           
           # Display summary
