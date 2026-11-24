@@ -2,6 +2,8 @@
 
 Back to the [project README](../README.md). This is the experiment report as written by the project team. `results/experiemnt_report.pdf` is the same report as a PDF, and the figures are in `results/`. The repository does not contain the raw per-request data behind the tables.
 
+Note added later: the [hop-count study](hop-count-study.md) simulates Chord and Koorde hop counts from 8 to 100,000 nodes with this repository's routing code. It is separate from, and does not change, the measurements below.
+
 ## Executive Summary
 This report compares the runtime behavior of two distributed hash table (DHT) designs — **Chord** and **Koorde** — across three experiments: latency scaling, cache hit rate under churn, and throughput under load. Key findings:
 

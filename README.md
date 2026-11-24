@@ -75,6 +75,10 @@ Chord levels off at about 3000 requests per second. Koorde levels off at about 2
 
 **What these results do and do not show.** The AWS Learner Lab allowed at most 9 EC2 instances per cluster, and an attempt to reach 40 nodes never became ready. The latency results hold only up to 32 nodes. They do not show whether Koorde overtakes Chord at hundreds or thousands of nodes; the report lists experiments that would test that. Raw per-request data is not in the repository.
 
+**Hop counts at larger N (simulation).** The cluster experiments stopped at 32 nodes, so the [hop-count study](docs/hop-count-study.md) counts lookup hops in a simulator (`cmd/hopsim`) that calls the same pure routing functions as the nodes, on rings of 8 to 100,000 nodes with 66-bit random IDs, 10,000 lookups per point and one fixed seed. It assumes stabilised rings with no failures, churn or latency. With the routing tables this code builds, Chord needs a mean of 2.43 RPC hops at 32 nodes and 8.19 at 100,000. Koorde needs more at every size tested: 20.1 (k=2) and 22.7 (k=8) at 32 nodes, and 1,406 (k=2), 630 (k=8) and 478 (k=16) at 100,000. The study reports RPC hops and the logical routing steps counted in the Koorde paper side by side, and breaks the Koorde hop count down by window rule and by how the lookup starts. The simulation was checked against a real in-process cluster only on 8 nodes.
+
+![Mean RPC hops and mean logical routing steps against log2 N for Chord and Koorde, simulated](results/hopsim/hops.svg)
+
 ## Quick start
 
 You need Go 1.25 or later, as in `go.mod`. No Docker is needed for a local node.
@@ -117,6 +121,7 @@ cmd/
   cache-client/    interactive cache client (cache, metrics, hotspots)
   cache-workload/  Zipf HTTP workload generator
   tester/          DHT test helper
+  hopsim/          hop-count simulator (Chord and Koorde, up to 100,000 nodes)
 internal/
   node/dht/        common DHT interface
   node/logicnode/  Koorde node
@@ -131,7 +136,7 @@ deploy/            eks, localstack, tracing, test, demonstration
 docker/            Dockerfiles
 scripts/           PowerShell scripts for local benchmarks
 results/           charts and PDF reports
-docs/              local testing guide, benchmark report
+docs/              local testing guide, benchmark report, hop-count study
 ```
 
 ## Credits
