@@ -173,29 +173,36 @@ func (n *Node) Delete(ctx context.Context, id domain.ID) error {
 	return client2.RemoveRemote(ctx, cli, id)
 }
 
+// NextHop is Chord's pure routing decision for a lookup of id at node self
+// whose first successor is succ and whose closest preceding finger for id is
+// closest (see ClosestPreceding). If id is in (self, succ] the lookup is over
+// and the result is succ (done = true). Otherwise the lookup is forwarded to
+// closest, or to succ if closest is self (the finger table cannot help).
+func NextHop(self, succ, closest *domain.Node, id domain.ID) (done bool, next *domain.Node) {
+	if id.Between(self.ID, succ.ID) || id.Equal(succ.ID) {
+		return true, succ
+	}
+	if closest.ID.Equal(self.ID) {
+		return false, succ
+	}
+	return false, closest
+}
+
 func (n *Node) LookUp(ctx context.Context, id domain.ID) (*domain.Node, error) {
 	// Chord lookup logic
 	// Find successor of id
-
-	// 1. Check if id is in (self, successor]
 	self := n.rt.Self()
 	succ := n.rt.FirstSuccessor()
 	if succ == nil {
 		return nil, fmt.Errorf("lookup: successor is nil")
 	}
 
-	if id.Between(self.ID, succ.ID) || id.Equal(succ.ID) {
-		return succ, nil
+	// The routing decision is the pure function NextHop.
+	done, next := NextHop(self, succ, n.rt.ClosestPrecedingNode(id), id)
+	if done {
+		return next, nil
 	}
-
-	// 2. Find closest preceding node in finger table
-	closest := n.rt.ClosestPrecedingNode(id)
-
-	// 3. If closest is self, we are stuck (shouldn't happen if finger table is correct)
-	// forward to successor
-	if closest.ID.Equal(self.ID) {
-		closest = succ
-	}
+	closest := next
 
 	// 4. Forward query to closest
 	cli, err := n.cp.GetFromPool(closest.Addr)

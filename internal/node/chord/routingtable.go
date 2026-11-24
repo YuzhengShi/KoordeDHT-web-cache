@@ -80,21 +80,23 @@ func (rt *RoutingTable) SetPredecessor(node *domain.Node) {
 func (rt *RoutingTable) ClosestPrecedingNode(id domain.ID) *domain.Node {
 	rt.mu.RLock()
 	defer rt.mu.RUnlock()
+	return ClosestPreceding(rt.self, rt.fingers, id)
+}
 
-	// Scan fingers from furthest to closest
-	for i := len(rt.fingers) - 1; i >= 0; i-- {
-		finger := rt.fingers[i]
+// ClosestPreceding is the pure form of ClosestPrecedingNode: it scans fingers
+// from furthest to closest and returns the first non-nil one inside (self, id),
+// or self if there is none. Nil entries are skipped.
+func ClosestPreceding(self *domain.Node, fingers []*domain.Node, id domain.ID) *domain.Node {
+	for i := len(fingers) - 1; i >= 0; i-- {
+		finger := fingers[i]
 		if finger != nil {
-			if finger.ID.Between(rt.self.ID, id) {
+			if finger.ID.Between(self.ID, id) {
 				return finger
 			}
 		}
 	}
-
-	// Also check successor list?
-	// Standard Chord checks fingers.
 	// If no finger is between self and id, return self.
-	return rt.self
+	return self
 }
 
 func (rt *RoutingTable) SetFinger(i int, node *domain.Node) {
