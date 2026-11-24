@@ -103,14 +103,14 @@ Bye!
   --urls 100 \
   --requests 1000 \
   --rate 50 \
-  --zipf 0.9 \
+  --zipf 1.2 \
   --output results.csv
 
 # View results
 cat results.csv
 ```
 
-The workload generator rejects `--zipf` values of 1.0 or lower (`cmd/cache-workload/main.go`); its default is 1.2. Use a value above 1.0.
+`--zipf` must be above 1.0: the workload generator rejects 1.0 and lower (`cmd/cache-workload/main.go`). The default is 1.2.
 
 ---
 
